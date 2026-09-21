@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad512)"/>
+  <!-- Clipboard / Directory Icon -->
+  <rect x="112" y="100" width="288" height="326" rx="36" fill="#ffffff" opacity="0.95"/>
+  <rect x="176" y="68" width="160" height="60" rx="18" fill="#3b82f6"/>
+  <!-- People silhouette -->
+  <circle cx="218" cy="198" r="38" fill="#1e3a8a"/>
+  <path d="M160 282 C160 250 186 236 218 236 C250 236 276 250 276 282 Z" fill="#1e3a8a"/>
+  <!-- Second person (family/community) -->
+  <circle cx="304" cy="214" r="30" fill="#60a5fa"/>
+  <path d="M262 282 C262 256 282 242 304 242 C326 242 346 256 346 282 Z" fill="#60a5fa"/>
+  <!-- Lines representing records -->
+  <rect x="154" y="316" width="204" height="16" rx="8" fill="#cbd5e1"/>
+  <rect x="154" y="352" width="150" height="16" rx="8" fill="#cbd5e1"/>
+</svg>

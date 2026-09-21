@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>自治会員名簿管理システム</title>
+  <meta name="description" content="自治会・町内会の会員名簿管理、Googleスプレッドシート連携、Googleフォーム入会申請受付Webアプリ">
+  <meta name="theme-color" content="#1e3a8a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       ヘッダー
+       ========================================================================= -->
+  <header class="app-header">
+    <a href="#" class="header-brand" id="header-brand-link">
+      <div class="header-logo">👥</div>
+      <div>
+        <div class="brand-title" id="display-community-name">緑が丘自治会</div>
+        <div class="brand-subtitle">会員名簿管理システム</div>
+      </div>
+    </a>
+
+    <!-- PC用ナビゲーション -->
+    <nav class="desktop-nav">
+      <button type="button" class="nav-tab-btn active" data-tab="tab-members">📋 名簿一覧</button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-applications">
+        📥 入会申請受付 <span class="nav-badge" id="pc-app-badge" style="display: none;">0</span>
+      </button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-fees">💴 会費集金</button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-dashboard">📊 統計・概況</button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-reports">🖨️ 帳票印刷</button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-settings">⚙️ 設定</button>
+    </nav>
+
+    <!-- ヘッダー右側アクション -->
+    <div class="header-actions">
+      <div class="sync-indicator local" id="sync-indicator" title="クリックして手動再同期">
+        <span class="sync-dot"></span>
+        <span id="sync-status-text">ローカル</span>
+      </div>
+      <button type="button" class="btn-header-action" id="btn-open-add-member">
+        <span>＋</span><span>新規登録</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       印刷専用ヘッダー（通常非表示、印刷時のみ展開）
+       ========================================================================= -->
+  <div class="print-header" id="print-header-area">
+    <h1 id="print-community-title" style="font-size: 18pt; margin-bottom: 4px;">緑が丘自治会 会員名簿</h1>
+    <p style="font-size: 10pt; color: #555;" id="print-date-subtitle">出力日: 2026年9月</p>
+  </div>
+
+  <!-- =========================================================================
+       メインコンテンツ
+       ========================================================================= -->
+  <main class="main-container">
+
+    <!-- -----------------------------------------------------------------------
+         TAB 1: 会員名簿一覧
+         ----------------------------------------------------------------------- -->
+    <section id="tab-members" class="tab-content active">
+      <!-- 検索・絞り込みフィルターカード -->
+      <div class="filter-card">
+        <div class="search-box-row">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="member-search-input" class="search-input" placeholder="氏名、フリガナ、電話、住所、IDで検索...">
+            <button type="button" id="btn-clear-search" class="btn-clear-search" title="検索クリア">×</button>
+          </div>
+        </div>
+
+        <div class="filter-pills-row">
+          <select id="filter-block" class="filter-select">
+            <option value="all">ブロック: すべて</option>
+          </select>
+
+          <select id="filter-ban" class="filter-select">
+            <option value="all">班: すべて</option>
+          </select>
+
+          <select id="filter-role" class="filter-select">
+            <option value="all">役員: すべて</option>
+          </select>
+
+          <select id="filter-ban-leader" class="filter-select">
+            <option value="all">班長: すべて</option>
+            <option value="班長">班長のみ</option>
+            <option value="なし">班長以外</option>
+          </select>
+
+          <select id="filter-fee" class="filter-select">
+            <option value="all">会費: すべて</option>
+            <option value="納入済">納入済</option>
+            <option value="未納">未納</option>
+            <option value="免除">免除</option>
+          </select>
+
+          <select id="filter-circulation" class="filter-select">
+            <option value="all">回覧: すべて</option>
+            <option value="LINE">回覧: LINE</option>
+            <option value="紙">回覧: 紙</option>
+          </select>
+
+          <select id="filter-status" class="filter-select">
+            <option value="all" selected>状態: 全員（退会含む）</option>
+            <option value="現役">状態: 現役のみ</option>
+            <option value="休会">状態: 休会中</option>
+            <option value="転出退会">状態: 転出退会のみ</option>
+          </select>
+
+          <span class="filter-count-label" id="member-count-label">該当: 0件</span>
+        </div>
+      </div>
+
+      <!-- PC用表示切り替えトグル（モバイルでは非表示） -->
+      <div class="view-toggle-row" style="margin-bottom: 8px; display: flex; justify-content: flex-end; gap: 6px;">
+        <button type="button" class="btn-card-action" id="btn-view-cards" title="カード表示">🗂️ カード</button>
+        <button type="button" class="btn-card-action primary" id="btn-view-table" title="テーブル表示">📑 テーブル</button>
+      </div>
+
+      <!-- モバイル用カードリスト -->
+      <div id="member-cards-list" class="member-cards-grid">
+        <!-- JSで動的生成 -->
+      </div>
+
+      <!-- PC用テーブル表示 -->
+      <div id="member-table-container" class="desktop-table-container">
+        <table class="roster-table">
+          <thead>
+            <tr>
+              <th>会員ID</th>
+              <th>班</th>
+              <th>氏名 (フリガナ)</th>
+              <th>状態</th>
+              <th>回覧</th>
+              <th>電話番号</th>
+              <th>住所</th>
+              <th>世帯人数</th>
+              <th>役員</th>
+              <th>班長</th>
+              <th>会費</th>
+              <th>要支援</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="member-table-body">
+            <!-- JSで動的生成 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 2: 入会申請受付 (Googleフォーム連携)
+         ----------------------------------------------------------------------- -->
+    <section id="tab-applications" class="tab-content">
+      <div class="application-banner">
+        <div class="app-banner-title">
+          <span>📥</span> Googleフォーム入会申込の受付・承認
+        </div>
+        <p class="app-banner-desc">
+          Googleフォームから送信された入会申請データがここに集約されます。内容を確認し、所属班を割り当てて「承認」すると、正式な会員名簿マスターに自動反映されます。
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-card-action primary" id="btn-app-filter-pending">未処理のみ</button>
+          <button type="button" class="btn-card-action" id="btn-app-filter-all">すべて表示</button>
+        </div>
+        <span class="filter-count-label" id="app-count-label">未処理: 0件</span>
+      </div>
+
+      <div id="applications-list" class="applications-list">
+        <!-- JSで動的生成 -->
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 3: 会費集金チェックモード
+         ----------------------------------------------------------------------- -->
+    <section id="tab-fees" class="tab-content">
+      <div class="fee-header-panel">
+        <div class="fee-ban-select-row">
+          <label for="fee-ban-select" style="font-weight: 700; font-size: 0.95rem;">集金対象の班:</label>
+          <select id="fee-ban-select" class="filter-select" style="font-weight: 700; font-size: 1rem;">
+            <!-- JSで班オプション生成 -->
+          </select>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: auto;">ワンタップで納入切替</span>
+        </div>
+
+        <div class="fee-progress-bar-container">
+          <div class="fee-progress-bar-fill" id="fee-progress-bar" style="width: 0%;"></div>
+        </div>
+
+        <div class="fee-progress-stats">
+          <span id="fee-progress-text">納入率: 0%</span>
+          <span id="fee-counts-text">納入済: 0 / 0 世帯</span>
+        </div>
+      </div>
+
+      <div id="fee-collection-list" class="fee-collection-list">
+        <!-- JSで動的生成 -->
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 4: 統計・概況ダッシュボード
+         ----------------------------------------------------------------------- -->
+    <section id="tab-dashboard" class="tab-content">
+      <div class="dashboard-grid">
+        <div class="stat-card">
+          <div class="stat-title">現役世帯数</div>
+          <div class="stat-value" id="dash-households">0</div>
+          <div class="stat-sub">世帯</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">会員総人口</div>
+          <div class="stat-value" id="dash-members-count">0</div>
+          <div class="stat-sub">人（世帯員含む）</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">今年度会費納入率</div>
+          <div class="stat-value" id="dash-fee-rate" style="color: var(--success);">0%</div>
+          <div class="stat-sub" id="dash-fee-sub">0 / 0 世帯</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">要支援・見守り</div>
+          <div class="stat-value" id="dash-support-count" style="color: #dc2626;">0</div>
+          <div class="stat-sub">世帯（防災・高齢者）</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-title">📢 回覧板・連絡方法の内訳（印刷部数の目安）</div>
+        <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 140px; background: #f0fdf4; border: 1px solid #86efac; border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #15803d;">📱 LINE配信</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #15803d;" id="dash-line-count">0</div>
+            <div style="font-size: 0.72rem; color: #166534;" id="dash-line-ratio">0%</div>
+          </div>
+          <div style="flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #475569;">📄 紙の回覧板</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #334155;" id="dash-paper-count">0</div>
+            <div style="font-size: 0.72rem; color: #64748b;" id="dash-paper-ratio">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-title">🏘️ 班別世帯数・人口分布</div>
+        <div id="ban-distribution-bars">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-title">🎖️ 自治会役員・委員一覧</div>
+        <div id="officers-summary-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-card-title">🚩 各班の班長一覧</div>
+        <div id="ban-leaders-summary-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 5: 帳票印刷 (A4縦 各種帳票出力)
+         ----------------------------------------------------------------------- -->
+    <section id="tab-reports" class="tab-content">
+      <!-- 帳票選択・印刷コントロールパネル -->
+      <div class="report-controls-card">
+        <div class="report-controls-header">
+          <div>
+            <div class="report-controls-title">🖨️ 帳票印刷・出力</div>
+            <div class="report-controls-desc">自治会会議や班長会などで配布・使用する各種帳票をプレビュー・印刷できます。</div>
+          </div>
+          <button type="button" class="btn-primary" id="btn-print-active-report">
+            <span>🖨️</span><span>印刷する（A4縦）</span>
+          </button>
+        </div>
+
+        <div class="report-controls-grid">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="report-select-type">出力する帳票の選択</label>
+            <select id="report-select-type" class="form-select">
+              <option value="block_ban_leaders" selected>ブロック長、班長名簿（A4縦）</option>
+              <option value="roster_full" disabled>会員名簿全件一覧（準備中）</option>
+              <option value="ban_distribution" disabled>班別集計表（準備中）</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="report-param-year">対象年度（和暦）</label>
+            <input type="text" id="report-param-year" class="form-input" value="令和8年度" placeholder="例: 令和8年度">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" for="report-param-date">出力基準日（和暦）</label>
+            <input type="text" id="report-param-date" class="form-input" value="R8.9.20" placeholder="例: R8.9.20">
+          </div>
+        </div>
+      </div>
+
+      <!-- A4縦 帳票プレビューコンテナ -->
+      <div class="report-preview-outer">
+        <div class="report-paper-a4 portrait" id="report-paper-container">
+          <!-- JSで動的レンダリング -->
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 6: 設定・管理・外部連携
+         ----------------------------------------------------------------------- -->
+    <section id="tab-settings" class="tab-content">
+      <!-- 自治会基本設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🏠 自治会基本設定</div>
+        <div class="form-group">
+          <label class="form-label" for="setting-community-name">自治会・町内会名</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="setting-community-name" class="form-input" placeholder="例: 緑が丘自治会">
+            <button type="button" class="btn-primary" id="btn-save-community-name">更新</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ブロック・班の管理設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🏘️ ブロック・班の編成設定</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          自治会内のブロック（1ブロック〜5ブロック等）と所属する班を自由に設定・変更できます。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ編成が共有されます。
+        </p>
+
+        <div id="block-settings-container" class="block-settings-grid">
+          <!-- JSで動的生成 -->
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
+          <button type="button" class="btn-secondary" id="btn-add-block">＋ 新しいブロックを追加</button>
+          <button type="button" class="btn-primary" id="btn-save-blocks" style="margin-left: auto;">💾 ブロック・班設定を保存</button>
+          <button type="button" class="btn-secondary" id="btn-reset-blocks">デフォルト編成に戻す</button>
+        </div>
+      </div>
+
+      <!-- 役職・係のマスタ設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🎖️ 役員のマスタ設定</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          自治会内の役員（会長、副会長、会計、書記、各種専門委員、顧問など）の選択肢を自由に追加・削除・編集できます（※「班長」は専用項目で管理されます）。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ役員一覧が共有されます。
+        </p>
+
+        <div class="role-settings-card">
+          <div id="role-chips-container" class="role-chips-container">
+            <!-- JSで動的生成 -->
+          </div>
+
+          <div class="role-add-row" style="margin-top: 12px;">
+            <input type="text" id="input-add-role" class="input-add-role" placeholder="新しい役員名 (例: 防犯交通部長、文化体育部長)">
+            <button type="button" class="btn-add-role" id="btn-add-role">＋ 役員を追加</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
+          <button type="button" class="btn-primary" id="btn-save-roles" style="margin-left: auto;">💾 役員設定を保存</button>
+          <button type="button" class="btn-secondary" id="btn-reset-roles">デフォルト役員に戻す</button>
+        </div>
+      </div>
+
+      <!-- Googleスプレッドシート・GAS連携設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">📊 Googleスプレッドシート連携 (GAS)</div>
+        <div class="form-group">
+          <label class="form-label" for="setting-gas-url">Google Apps Script Web App URL</label>
+          <input type="url" id="setting-gas-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+          <div class="form-help">
+            スプレッドシートのApps ScriptでデプロイしたWebアプリURLを入力すると、クラウドと双方向同期されます。
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button type="button" class="btn-primary" id="btn-save-gas-url">保存して接続テスト</button>
+          <button type="button" class="btn-secondary" id="btn-clear-gas-url">設定解除（ローカル化）</button>
+        </div>
+
+        <div class="guide-box">
+          <strong>📝 スプレッドシート・GASの簡単セットアップ手順:</strong>
+          <ol>
+            <li>Googleスプレッドシートを作成し、「拡張機能」>「Apps Script」を開きます。</li>
+            <li>本プロジェクト同梱の <code>Code.js</code> を丸ごとコピーして貼り付けます。</li>
+            <li>右上の「デプロイ」>「新しいデプロイ」で「ウェブアプリ」を選択。</li>
+            <li>アクセスできるユーザーを<strong>「全員」</strong>にしてデプロイ。</li>
+            <li>発行されたURLを上記に入力して「保存して接続テスト」をクリックするだけで完了です！</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Googleフォーム連携について -->
+      <div class="settings-section">
+        <div class="settings-section-title">📋 Googleフォーム連携ガイド</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">
+          入会申込用Googleフォームを作成し、回答先を上記スプレッドシートの「入会申込_フォーム連携」シートに設定することで、住民がスマホから送信した申込がアプリの「入会申請受付」タブに自動到着します。
+        </p>
+        <div class="guide-box">
+          <strong>推奨するGoogleフォームの設問例:</strong>
+          <ul style="padding-left: 20px; margin-top: 4px;">
+            <li>氏名（必須） / フリガナ（必須）</li>
+            <li>電話番号（必須） / メールアドレス</li>
+            <li>住所（番地・建物名・部屋番号）（必須）</li>
+            <li>世帯人数（同居のご家族の人数）</li>
+            <li>ご家族構成・続柄・年代</li>
+            <li>希望の班または近隣の目印</li>
+            <li>その他ご要望・防災時の配慮希望など</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- データ管理・印刷 -->
+      <div class="settings-section">
+        <div class="settings-section-title">📄 データ出力・印刷</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <button type="button" class="btn-secondary" id="btn-print-roster">🖨️ 名簿のA4印刷プレビュー</button>
+          <button type="button" class="btn-secondary" id="btn-export-csv">💾 CSVエクスポート</button>
+          <label class="btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center;">
+            📥 CSVインポート
+            <input type="file" id="input-import-csv" accept=".csv" style="display: none;">
+          </label>
+          <button type="button" class="btn-danger" id="btn-reset-sample" style="margin-left: auto;">初期サンプルに戻す</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       モバイル用ボトムナビゲーションバー
+       ========================================================================= -->
+  <nav class="bottom-nav">
+    <button type="button" class="bottom-nav-item active" data-tab="tab-members">
+      <div class="bottom-nav-icon">📋</div>
+      <div>名簿</div>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-applications">
+      <div class="bottom-nav-icon">📥</div>
+      <div>申請</div>
+      <span class="nav-badge" id="mobile-app-badge" style="display: none;">0</span>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-fees">
+      <div class="bottom-nav-icon">💴</div>
+      <div>会費</div>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-dashboard">
+      <div class="bottom-nav-icon">📊</div>
+      <div>概況</div>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-reports">
+      <div class="bottom-nav-icon">🖨️</div>
+      <div>帳票</div>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-settings">
+      <div class="bottom-nav-icon">⚙️</div>
+      <div>設定</div>
+    </button>
+  </nav>
+
+  <!-- =========================================================================
+       モーダル: 会員詳細・登録・編集
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-member">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-member-title">会員情報の詳細・編集</div>
+        <button type="button" class="btn-modal-close" id="btn-close-member-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-member">
+          <input type="hidden" id="edit-member-is-new" value="false">
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-id">会員ID</label>
+              <input type="text" id="m-id" class="form-input" readonly style="background: #f1f5f9;">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-ban">所属班 <span style="color: var(--danger);">*</span></label>
+              <select id="m-ban" class="form-select" required>
+                <!-- JSでオプション動的追加 -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-name">氏名（世帯主） <span style="color: var(--danger);">*</span></label>
+              <input type="text" id="m-name" class="form-input" required placeholder="例: 山田 太郎">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-kana">フリガナ</label>
+              <input type="text" id="m-kana" class="form-input" placeholder="例: ヤマダ タロウ">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-phone">電話番号1（主） <span style="color: var(--danger);">*</span></label>
+              <input type="tel" id="m-phone" class="form-input" required placeholder="例: 090-1234-5678">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-phone2">電話番号2（自宅・予備等）</label>
+              <input type="tel" id="m-phone2" class="form-input" placeholder="例: 03-1234-5678 または 携帯">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-email">メールアドレス</label>
+            <input type="email" id="m-email" class="form-input" placeholder="例: sample@example.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-address">住所（番地・建物名・部屋番号） <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="m-address" class="form-input" required placeholder="例: 1丁目12-3 パークハイツ101">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-circulation">回覧方法 <span style="color: var(--danger);">*</span></label>
+              <select id="m-circulation" class="form-select" required>
+                <option value="紙">紙（紙の回覧板）</option>
+                <option value="LINE">LINE（LINE配信）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-role">役員</label>
+              <select id="m-role" class="form-select">
+                <!-- JSでオプション動的追加 -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-ban-leader">班長</label>
+              <select id="m-ban-leader" class="form-select">
+                <option value="なし">なし</option>
+                <option value="班長">班長</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-fee-status">会費納入状況</label>
+              <select id="m-fee-status" class="form-select">
+                <option value="納入済">納入済</option>
+                <option value="未納">未納</option>
+                <option value="免除">免除</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-household-count">世帯人数</label>
+              <input type="number" id="m-household-count" class="form-input" min="1" max="20" value="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-family">同居ご家族・続柄</label>
+              <input type="text" id="m-family" class="form-input" placeholder="例: 妻: 花子(45), 長男: 一郎(17)">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="m-status">会員状態</label>
+              <select id="m-status" class="form-select">
+                <option value="現役">現役</option>
+                <option value="休会">休会</option>
+                <option value="転出退会">転出退会</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-support">要支援・見守り配慮</label>
+              <select id="m-support" class="form-select">
+                <option value="なし">なし</option>
+                <option value="要支援(防災)">要支援(防災)</option>
+                <option value="見守り対象(高齢)">見守り対象(高齢)</option>
+                <option value="要支援・見守り双方">要支援・見守り双方</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-join-date">加入年月日</label>
+            <input type="date" id="m-join-date" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-notes">備考・連絡事項</label>
+            <textarea id="m-notes" class="form-textarea" rows="3" placeholder="集金時の注意事項、避難時の留意点など"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="btn-delete-member" style="margin-right: auto;">退会・削除</button>
+        <button type="button" class="btn-secondary" id="btn-cancel-member-modal">キャンセル</button>
+        <button type="button" class="btn-primary" id="btn-save-member">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       モーダル: 入会申請の承認＆班割り当て
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-approve">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">入会申請の承認と名簿本登録</div>
+        <button type="button" class="btn-modal-close" id="btn-close-approve-modal">×</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="approve-app-id">
+
+        <div style="background: #f8fafc; padding: 12px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 0.88rem;">
+          <div><strong id="approve-applicant-name"></strong> 様 からの申請</div>
+          <div style="color: var(--text-muted);" id="approve-applicant-address"></div>
+          <div style="color: var(--text-muted);" id="approve-applicant-phone"></div>
+          <div style="margin-top: 6px; font-size: 0.82rem; color: #1e3a8a;" id="approve-applicant-preferred"></div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="approve-new-id">付与する会員ID</label>
+            <input type="text" id="approve-new-id" class="form-input" readonly style="background: #f1f5f9;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-ban">割り当てる班 <span style="color: var(--danger);">*</span></label>
+            <select id="approve-ban" class="form-select" required>
+              <!-- JSで動的生成 -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="approve-role">初期役員</label>
+            <select id="approve-role" class="form-select">
+              <!-- JSで動的生成 -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-ban-leader">班長</label>
+            <select id="approve-ban-leader" class="form-select">
+              <option value="なし">なし</option>
+              <option value="班長">班長</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="approve-fee">初年度会費状況</label>
+            <select id="approve-fee" class="form-select">
+              <option value="未納">未納</option>
+              <option value="納入済">納入済</option>
+              <option value="免除">免除</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-circulation">回覧方法 <span style="color: var(--danger);">*</span></label>
+            <select id="approve-circulation" class="form-select">
+              <option value="LINE">LINE（LINE配信）</option>
+              <option value="紙">紙（紙の回覧板）</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="approve-notes">名簿用備考</label>
+          <input type="text" id="approve-notes" class="form-input" placeholder="Googleフォームより入会">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="btn-cancel-approve">キャンセル</button>
+        <button type="button" class="btn-primary" id="btn-confirm-approve" style="background: var(--success);">
+          ✅ 承認して名簿に追加
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知コンテナ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- スクリプト群 -->
+  <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
