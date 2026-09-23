@@ -110,22 +110,28 @@ function updateSyncStatus(status, text) {
 // スプレッドシートから読み込んだ基本設定（自治会名・ブロック・役職）を適用
 function applyBasicSettings(settings) {
   if (!settings) return;
-  if (settings.communityName) {
-    api.setCommunityName(settings.communityName);
+  console.log('[CommunityRoster] applyBasicSettings received:', settings);
+  try {
+    if (settings.communityName) {
+      api.setCommunityName(settings.communityName);
+    }
+    if (settings.blocks && Array.isArray(settings.blocks) && settings.blocks.length > 0) {
+      api.setLocalBlocks(settings.blocks);
+    }
+    if (settings.roles && Array.isArray(settings.roles) && settings.roles.length > 0) {
+      api.setLocalRoles(settings.roles);
+    }
+    state.editingBlocks = null;
+    state.editingRoles = null;
+    populateBlockAndBanDropdowns();
+    populateRoleDropdowns();
+    updateCommunityTitleDisplay();
+    renderBlockSettings();
+    renderRoleSettings();
+    console.log('[CommunityRoster] 基本設定を正常に反映しました');
+  } catch (err) {
+    console.error('[CommunityRoster] applyBasicSettings error:', err);
   }
-  if (settings.blocks && Array.isArray(settings.blocks) && settings.blocks.length > 0) {
-    api.setLocalBlocks(settings.blocks);
-  }
-  if (settings.roles && Array.isArray(settings.roles) && settings.roles.length > 0) {
-    api.setLocalRoles(settings.roles);
-  }
-  state.editingBlocks = null;
-  state.editingRoles = null;
-  populateBlockAndBanDropdowns();
-  populateRoleDropdowns();
-  updateCommunityTitleDisplay();
-  renderBlockSettings();
-  renderRoleSettings();
 }
 
 // =============================================================================
@@ -1911,7 +1917,12 @@ function initEventListeners() {
         state.applications = [];
         renderAllViews();
         updateAuthUI();
-        showToast('スプレッドシートへの接続に成功し、設定を読み込みました！', '✅');
+        if (res.settings) {
+          showToast(`「${res.settings.communityName || '自治会'}」の基本設定を先行読み込みしました！`, '✅');
+        } else {
+          showToast('⚠️ GASが旧バージョンのため基本設定を取得できませんでした。Code.jsの再デプロイを行ってください。', '⚠️');
+          alert('【重要】スプレッドシートとの通信には成功しましたが、Google Apps Script側が旧バージョンのため、自治会名やブロック設定などの基本設定を受信できませんでした。\n\nスプレッドシートの「拡張機能」>「Apps Script」を開き、最新のCode.jsを貼り付けて「デプロイ」>「デプロイを管理」> 鉛筆マーク >「新バージョン」として再デプロイしてください。');
+        }
         showToast('名簿データを閲覧・管理するには、右上の「🔒 未認証」から合言葉を入力してください。', '🔑');
       } else {
         showToast('スプレッドシートへの接続・同期に成功しました！', '✅');

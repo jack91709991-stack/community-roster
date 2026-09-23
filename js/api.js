@@ -110,6 +110,34 @@ const api = {
     localStorage.setItem(STORAGE_KEYS.COMMUNITY_NAME, (name || '自治会').trim());
   },
 
+  getLocalBlocks() {
+    return typeof getBlockConfig === 'function' ? getBlockConfig() : [];
+  },
+
+  setLocalBlocks(blocks) {
+    if (Array.isArray(blocks) && blocks.length > 0) {
+      if (typeof saveBlockConfig === 'function') {
+        saveBlockConfig(blocks);
+      } else {
+        localStorage.setItem(STORAGE_KEYS.BLOCKS, JSON.stringify(blocks));
+      }
+    }
+  },
+
+  getLocalRoles() {
+    return typeof getRoleConfig === 'function' ? getRoleConfig() : [];
+  },
+
+  setLocalRoles(roles) {
+    if (Array.isArray(roles) && roles.length > 0) {
+      if (typeof saveRoleConfig === 'function') {
+        saveRoleConfig(roles);
+      } else {
+        localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(roles));
+      }
+    }
+  },
+
   // ローカルキャッシュから名簿を取得
   getLocalMembers() {
     const raw = localStorage.getItem(STORAGE_KEYS.MEMBERS);
