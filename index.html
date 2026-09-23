@@ -777,7 +777,7 @@
           <span style="font-size: 1.4rem;">🔒</span>
           <span>役員認証（合言葉）</span>
         </div>
-        <button type="button" class="btn-modal-close" id="btn-close-auth-modal" style="position: absolute; right: 16px; display: none;">×</button>
+        <button type="button" class="btn-modal-close" id="btn-close-auth-modal" style="position: absolute; right: 16px;" title="閉じる">×</button>
       </div>
       <div class="modal-body" style="padding: 24px 20px;">
         <div style="text-align: center; margin-bottom: 20px;">
@@ -807,6 +807,10 @@
           <button type="submit" class="btn-primary" id="btn-submit-auth" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <span id="auth-btn-spinner" class="spinner" style="display: none; width: 18px; height: 18px; border-width: 2px;"></span>
             <span id="auth-btn-text">認証して名簿を開く</span>
+          </button>
+
+          <button type="button" class="btn-secondary" id="btn-cancel-auth" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 0.88rem; color: var(--text-muted); background: #f8fafc; border-color: var(--border-color); display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>↩️</span> パスワードを入力せずに元の画面に戻る
           </button>
         </form>
 
@@ -892,8 +896,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20260923_4"></script>
-  <script src="js/api.js?v=20260923_4"></script>
-  <script src="js/app.js?v=20260923_4"></script>
+  <script src="js/data.js?v=20260923_5"></script>
+  <script src="js/api.js?v=20260923_5"></script>
+  <script src="js/app.js?v=20260923_5"></script>
 </body>
 </html>

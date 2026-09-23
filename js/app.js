@@ -2282,10 +2282,24 @@ function initAuthFeature() {
     });
   }
 
-  // 認証モーダルの閉じるボタン
+  // 認証モーダルの閉じる・キャンセルボタン
   const btnCloseAuth = document.getElementById('btn-close-auth-modal');
   if (btnCloseAuth) {
     btnCloseAuth.addEventListener('click', closeAuthModal);
+  }
+  const btnCancelAuth = document.getElementById('btn-cancel-auth');
+  if (btnCancelAuth) {
+    btnCancelAuth.addEventListener('click', closeAuthModal);
+  }
+
+  // 認証モーダル背景クリックで閉じる
+  const modalAuth = document.getElementById('modal-auth');
+  if (modalAuth) {
+    modalAuth.addEventListener('click', (e) => {
+      if (e.target === modalAuth) {
+        closeAuthModal();
+      }
+    });
   }
 
   // 認証フォーム送信
@@ -2425,10 +2439,11 @@ function openAuthModal(reasonMessage = '') {
 
   const hasPasscode = !!api.getPasscode();
 
-  // 既に合言葉がある場合は×ボタンで閉じられるようにし、ログアウトボタンを表示
+  // 右上の×ボタンは常に表示（未認証時でも元の画面に戻れるようにする）
   if (btnClose) {
-    btnClose.style.display = hasPasscode ? 'block' : 'none';
+    btnClose.style.display = 'block';
   }
+  // ログアウトボタンは認証中のみ表示
   if (logoutArea) {
     logoutArea.style.display = hasPasscode ? 'block' : 'none';
   }
