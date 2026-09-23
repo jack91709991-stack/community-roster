@@ -848,38 +848,40 @@
       </div>
       <div class="modal-body" style="overflow-y: auto; padding: 20px;">
         
-        <!-- STEP 1: 役員合言葉 -->
+        <!-- STEP 1: スプレッドシート連携（役員全員の手順） -->
         <div style="margin-bottom: 24px;">
           <h3 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
             <span style="background: var(--primary); color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">STEP 1</span>
-            <span>「🔒 役員合言葉（パスコード）」の入力と画面起動</span>
+            <span>Googleスプレッドシートとの初回連携（役員全員の手順）</span>
           </h3>
           <p style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 8px;">
-            初回起動時や合言葉更新時には自動で入力画面が表示されます。<strong>また、画面右上の【🔒 未認証】（または【👤 役員】）ボタンをクリックすると、いつでも合言葉の入力画面を起動できます。</strong>
+            自治会スプレッドシートの名簿データを手元の端末に読み込むため、初回に1回だけ連携URLの設定を行います。<br>
+            <strong>上部メニューの「⚙️ 設定」タブを開き、少し下にスクロールして「Google Apps Script Web App URL」を入力し「保存して接続テスト」をクリックしてください。</strong>
           </p>
-          <img src="images/manual_auth_screen.jpg" alt="合言葉入力画面の起動位置" style="width: 100%; max-height: 280px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
-          <div style="font-size: 0.82rem; background: #eff6ff; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary);">
-            ・<strong>👤 一般役員合言葉（初期値: roster2026）:</strong> 名簿閲覧、集金チェック、帳票印刷のみ可能（編集不可の安全モード）。<br>
-            ・<strong>👑 管理者合言葉（初期値: admin2026）:</strong> 名簿の新規追加・編集・削除、役職・合言葉の設定変更が可能です。
-          </div>
+          <img src="images/manual_gas_setup.jpg" alt="スプレッドシート連携手順（設定タブからスクロールしてURL入力）" style="width: 100%; max-height: 320px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
+          <ol style="font-size: 0.84rem; padding-left: 20px; line-height: 1.6; color: var(--text-color);">
+            <li>管理者から共有された<strong>「Google Apps Script Web App URL」</strong>をコピーします。</li>
+            <li>名簿アプリの <strong>「⚙️ 設定」</strong> タブを開き、画面を少し下にスクロールします。</li>
+            <li>「Google Apps Script Web App URL」枠に貼り付け、<strong>「保存して接続テスト」</strong> をクリックします。</li>
+            <li>右上が<strong>「接続成功 / 同期完了」</strong>になれば連携完了です！<strong>画面右上に【🔒 未認証】ボタンが表示されます。</strong></li>
+          </ol>
         </div>
 
-        <!-- STEP 2: スプレッドシート連携（役員全員の手順） -->
+        <!-- STEP 2: 役員合言葉 -->
         <div style="margin-bottom: 16px;">
           <h3 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
             <span style="background: var(--primary); color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">STEP 2</span>
-            <span>スプレッドシートとの初回連携・データ同期（役員全員の手順）</span>
+            <span>「🔒 役員合言葉（パスコード）」の入力と画面起動</span>
           </h3>
           <p style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 8px;">
-            自治会スプレッドシートの名簿データを手元の端末（スマホ・PC）に読み込むため、初回に1回だけURLの登録を行います。
+            スプレッドシートの同期が完了すると、画面右上に<strong>【🔒 未認証】</strong>ボタンが表示されます。クリックして役員合言葉を入力してください。
           </p>
-          <img src="images/manual_gas_setup.jpg" alt="スプレッドシート連携の簡単3ステップ" style="width: 100%; max-height: 280px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
-          <ol style="font-size: 0.84rem; padding-left: 20px; line-height: 1.6; color: var(--text-color);">
-            <li>管理者から共有された<strong>「Google Apps Script Web App URL」</strong>をコピーします。</li>
-            <li>名簿アプリの <strong>「⚙️ 設定」</strong> タブを開きます。</li>
-            <li>URL枠に貼り付け、<strong>「保存して接続テスト」</strong> をクリックします。</li>
-            <li>右上が<strong>「接続中（緑の点）」</strong>になれば完了！スプレッドシートの名簿が自動同期されます。</li>
-          </ol>
+          <img src="images/manual_auth_screen.jpg" alt="画面右上から合言葉入力画面を起動する手順" style="width: 100%; max-height: 280px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
+          <div style="font-size: 0.82rem; background: #eff6ff; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary);">
+            ・<strong>👤 一般役員合言葉（初期値: roster2026）:</strong> 名簿閲覧、集金チェック、帳票印刷のみ可能（編集不可の安全モード）。<br>
+            ・<strong>👑 管理者合言葉（初期値: admin2026）:</strong> 名簿の新規追加・編集・削除、役職・合言葉の設定変更が可能です。<br>
+            ※認証完了後、いつでも右上のバッジ（👑/👤）からログアウト（未認証に戻す）が可能です。
+          </div>
         </div>
 
       </div>

@@ -252,16 +252,57 @@
       <p style="font-size: 0.88rem; color: var(--text-muted);">※ ホーム画面に追加すると、次回からスマートフォンのアプリアイコンからワンタップで全画面起動できます。</p>
     </section>
 
-    <!-- STEP 2: 役員合言葉の入力 -->
+    <!-- STEP 2: スプレッドシート連携（役員全員の手順） -->
     <section class="section-card">
       <h2 class="section-heading">
         <span class="step-badge">STEP 2</span>
+        <span>Googleスプレッドシートとの初回連携・データ同期（全員の手順）</span>
+      </h2>
+      <p>
+        自治会で管理しているGoogleスプレッドシートの名簿データを自分の端末（スマホ・PC）に読み込むため、初回に1回だけ連携URLの設定を行います。<br>
+        <strong>一般役員の方も、管理者から案内されたURLをアプリに登録することで、最新の名簿データと同期できるようになります。</strong>
+      </p>
+
+      <img src="images/manual_gas_setup.jpg" alt="スプレッドシート連携の手順（設定タブをクリック後、下にスクロールしてURL入力）" class="guide-img">
+
+      <div class="info-card-box">
+        <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">
+          📱【役員全員】アプリに連携URLを登録する手順（簡単3ステップ）
+        </h3>
+        <ol class="step-list">
+          <li><strong>Step 1:</strong> 管理者からLINEやメールで共有された<strong>「Google Apps Script Web App URL」</strong>（<code>https://script.google.com/macros/s/.../exec</code>）をコピーします。</li>
+          <li><strong>Step 2:</strong> 名簿アプリ上部メニュー（スマホは下部ナビゲーション）の <strong>「⚙️ 設定」</strong> タブを開き、<strong>画面を少し下にスクロール</strong>します。</li>
+          <li><strong>Step 3:</strong> 「Google Apps Script Web App URL」の入力枠に貼り付け、<strong>「保存して接続テスト」</strong> ボタンをクリックします。</li>
+        </ol>
+        <p style="font-size: 0.9rem; color: var(--accent); font-weight: 700;">
+          ✅ 画面右上のインジケーターが「同期完了 / 接続中」になり、<strong>画面右上に【🔒 未認証】ボタンが表示されます！</strong>
+        </p>
+      </div>
+
+      <div style="background: #f1f5f9; border-radius: 8px; padding: 14px; margin-top: 16px;">
+        <h4 style="color: var(--text); font-size: 0.95rem; margin-bottom: 6px;">
+          🛠️【管理者向け】スプレッドシート側でのURL発行手順（初回のみ）
+        </h4>
+        <ol style="margin-left: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+          <li>自治会のGoogleスプレッドシートを開き、「拡張機能」>「Apps Script」を開きます。</li>
+          <li>本システム同梱の <code>Code.js</code> を丸ごと貼り付けて保存します。</li>
+          <li>右上の「デプロイ」>「新しいデプロイ」で「ウェブアプリ」を選択。</li>
+          <li>アクセスできるユーザーを<strong>「全員」</strong>に設定して「デプロイ」をクリックします。</li>
+          <li>発行された <strong>Web App URL</strong> をコピーし、役員グループ（LINE等）に案内してください。</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- STEP 3: 役員合言葉の入力 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 3</span>
         <span>「🔒 役員合言葉（パスコード）」の入力と画面起動</span>
       </h2>
       <p>
-        個人情報保護のため、役員名簿を安全に閲覧・管理するための合言葉（パスコード）が設定されています。<br>
-        初回アクセス時や合言葉の更新時には、自動的に画面中央に「役員認証」ダイアログが表示されます。<br>
-        <strong>また、いつでも画面右上の【🔒 未認証】ボタン（または【👤 役員】バッジ）をクリックすることで、合言葉の入力画面を起動できます。</strong>
+        スプレッドシートとの同期が完了すると、画面右上に<strong>【🔒 未認証】</strong>ボタンが表示されます。<br>
+        このボタンをクリックして役員合言葉を入力することで、名簿の全データが閲覧・管理できるようになります。<br>
+        <strong>また、作業終了後はいつでも右上のバッジ（👑/👤）から「ログアウト（未認証に戻す）」が可能です。</strong>
       </p>
 
       <img src="images/manual_auth_screen.jpg" alt="画面右上から合言葉入力画面を起動する手順" class="guide-img">
@@ -302,47 +343,6 @@
       <div class="alert-box">
         <strong>💡 役員交代時の引き継ぎポイント:</strong><br>
         年度が変わった時は、管理者がスプレッドシート側（またはWeb画面の設定タブ）で合言葉を新年度のものに変更するだけで、<strong>旧役員の端末からの名簿アクセスが一括遮断</strong>されます。個人のGoogleアカウントを収集・管理する手間はありません。
-      </div>
-    </section>
-
-    <!-- STEP 3: スプレッドシート連携（役員全員の手順） -->
-    <section class="section-card">
-      <h2 class="section-heading">
-        <span class="step-badge">STEP 3</span>
-        <span>Googleスプレッドシートとの初回連携・データ同期（全員の手順）</span>
-      </h2>
-      <p>
-        自治会で管理しているGoogleスプレッドシートの名簿データを自分の端末（スマホ・PC）に読み込むため、初回に1回だけ連携URLの設定を行います。<br>
-        <strong>一般役員の方も、管理者から案内されたURLをアプリに登録することで、最新の名簿データと同期できるようになります。</strong>
-      </p>
-
-      <img src="images/manual_gas_setup.jpg" alt="スプレッドシート連携の簡単3ステップ" class="guide-img">
-
-      <div class="info-card-box">
-        <h3 style="color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">
-          📱【役員全員】アプリに連携URLを登録する手順（簡単3ステップ）
-        </h3>
-        <ol class="step-list">
-          <li><strong>Step 1:</strong> 管理者からLINEやメールで共有された<strong>「Google Apps Script Web App URL」</strong>（<code>https://script.google.com/macros/s/.../exec</code>）をコピーします。</li>
-          <li><strong>Step 2:</strong> 名簿アプリの <strong>「⚙️ 設定」</strong> タブを開きます（PCは上部メニュー、スマホは下部ナビゲーション）。</li>
-          <li><strong>Step 3:</strong> 「Google Apps Script Web App URL」の枠に貼り付け、<strong>「保存して接続テスト」</strong> ボタンをクリックします。</li>
-        </ol>
-        <p style="font-size: 0.9rem; color: var(--accent); font-weight: 700;">
-          ✅ 画面右上のインジケーターが「接続中（緑の点）」になれば完了です！自治会スプレッドシートの会員データが瞬時に同期されます。
-        </p>
-      </div>
-
-      <div style="background: #f1f5f9; border-radius: 8px; padding: 14px; margin-top: 16px;">
-        <h4 style="color: var(--text); font-size: 0.95rem; margin-bottom: 6px;">
-          🛠️【管理者向け】スプレッドシート側でのURL発行手順（初回のみ）
-        </h4>
-        <ol style="margin-left: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
-          <li>自治会のGoogleスプレッドシートを開き、「拡張機能」>「Apps Script」を開きます。</li>
-          <li>本システム同梱の <code>Code.js</code> を丸ごと貼り付けて保存します。</li>
-          <li>右上の「デプロイ」>「新しいデプロイ」で「ウェブアプリ」を選択。</li>
-          <li>アクセスできるユーザーを<strong>「全員」</strong>に設定して「デプロイ」をクリックします。</li>
-          <li>発行された <strong>Web App URL</strong> をコピーし、役員グループ（LINE等）に案内してください。</li>
-        </ol>
       </div>
     </section>
 
