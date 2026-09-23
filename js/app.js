@@ -2326,6 +2326,16 @@ function initAuthFeature() {
       openAuthModal('再認証を行います。合言葉を入力してください。');
     });
   }
+
+  // ログアウトボタン (モーダル内 & 設定タブ内)
+  const btnModalLogout = document.getElementById('btn-modal-logout');
+  if (btnModalLogout) {
+    btnModalLogout.addEventListener('click', handleLogout);
+  }
+  const btnSettingsLogout = document.getElementById('btn-settings-logout');
+  if (btnSettingsLogout) {
+    btnSettingsLogout.addEventListener('click', handleLogout);
+  }
 }
 
 // 権限UIの更新
@@ -2410,11 +2420,17 @@ function openAuthModal(reasonMessage = '') {
   const input = document.getElementById('auth-input-passcode');
   const errorMsg = document.getElementById('auth-error-msg');
   const btnClose = document.getElementById('btn-close-auth-modal');
+  const logoutArea = document.getElementById('auth-logout-area');
   if (!modal) return;
 
-  // 既に合言葉がある場合は×ボタンで閉じられるようにする
+  const hasPasscode = !!api.getPasscode();
+
+  // 既に合言葉がある場合は×ボタンで閉じられるようにし、ログアウトボタンを表示
   if (btnClose) {
-    btnClose.style.display = api.getPasscode() ? 'block' : 'none';
+    btnClose.style.display = hasPasscode ? 'block' : 'none';
+  }
+  if (logoutArea) {
+    logoutArea.style.display = hasPasscode ? 'block' : 'none';
   }
 
   if (input) {
@@ -2440,6 +2456,28 @@ function openAuthModal(reasonMessage = '') {
 function closeAuthModal() {
   const modal = document.getElementById('modal-auth');
   if (modal) modal.classList.remove('active');
+}
+
+// ログアウト処理（未認証に戻す）
+function handleLogout() {
+  const roleName = api.isAdmin() ? '管理者' : '一般役員';
+  const ok = confirm(`現在【${roleName}】として認証されています。\n\n認証を解除して「未認証」の状態に戻しますか？\n・画面上の名簿データは非表示になります。\n・再度閲覧するには役員合言葉の入力が必要になります。`);
+  if (!ok) return;
+
+  // 認証情報の破棄
+  api.clearAuth();
+
+  // メモリ上の会員データ・申請データを消去（共用端末での情報保護）
+  state.members = [];
+  state.applications = [];
+
+  // UI・バッジ・表示ビューの再描画
+  updateAuthUI();
+  renderAllViews();
+  closeAuthModal();
+
+  playTone('toggle');
+  showToast('認証を解除しました（未認証状態に戻りました）', '🔒');
 }
 
 // 認証の実行

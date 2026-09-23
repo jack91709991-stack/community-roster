@@ -217,6 +217,17 @@ const api = {
     const gasUrl = this.getGasUrl();
     const passcode = this.getPasscode();
     
+    // パスコードがない場合は未認証として扱う
+    if (!passcode) {
+      if (onStatusChange) onStatusChange('offline', '役員合言葉の入力が必要です');
+      return {
+        members: [],
+        applications: [],
+        authError: true,
+        error: '役員合言葉（パスコード）が設定されていません'
+      };
+    }
+
     // GAS URLが設定されていない場合はローカルデータを使用
     if (!gasUrl) {
       if (onStatusChange) onStatusChange('local', 'ローカルモード（GAS未設定）');
