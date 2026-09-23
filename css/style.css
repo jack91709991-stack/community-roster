@@ -71,6 +71,7 @@ body {
   padding: 0 16px;
   z-index: 100;
   box-shadow: var(--shadow-sm);
+  flex-wrap: nowrap;
 }
 
 .header-brand {
@@ -79,6 +80,7 @@ body {
   gap: 10px;
   text-decoration: none;
   color: var(--text-main);
+  min-width: 0;
 }
 
 .header-logo {
@@ -112,6 +114,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 /* 同期インジケーター */
@@ -1327,6 +1331,109 @@ body {
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   ヘッダー・モバイル最適化 (画面幅 767px以下)
+   文字数を抑えて記号・アイコン表示に切り替え、縦のはみ出し・改行を完全防止
+   -------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  .app-header {
+    padding: 0 10px;
+    flex-wrap: nowrap;
+  }
+
+  .header-brand {
+    gap: 6px;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .header-logo {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 0.92rem;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 「会員名簿管理システム」サブタイトルを非表示にして幅を確保 */
+  .brand-subtitle {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 5px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+  }
+
+  /* 1. 同期ステータス文字（「スプレッドシートと同期中...」等）を非表示にし、状態ドットのみ表示 */
+  #sync-status-text {
+    display: none;
+  }
+  .sync-indicator {
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    justify-content: center;
+    border-radius: var(--radius-full);
+  }
+  .sync-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* 2. 権限バッジの文字（「未認証」「管理者」「役員」）を非表示にし、アイコン記号のみ表示 */
+  #auth-role-label {
+    display: none;
+  }
+  .auth-role-badge {
+    padding: 0;
+    width: 32px;
+    height: 28px;
+    min-width: 32px;
+    justify-content: center;
+    font-size: 0.95rem;
+    gap: 0;
+  }
+
+  /* 3. ヘルプボタンのテキスト「ヘルプ」を非表示にし、記号「❓」のみ表示 */
+  .btn-help-text {
+    display: none;
+  }
+  .btn-header-help {
+    padding: 0;
+    width: 30px;
+    height: 28px;
+    min-width: 30px;
+    justify-content: center;
+    font-size: 0.88rem;
+    gap: 0;
+  }
+
+  /* 4. 新規登録ボタンのテキスト「新規登録」を非表示にし、記号「＋」のみ表示 */
+  .btn-add-text {
+    display: none;
+  }
+  .btn-header-action {
+    padding: 0;
+    width: 30px;
+    height: 28px;
+    min-width: 30px;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    gap: 0;
+  }
 }
 
 /* --------------------------------------------------------------------------
