@@ -369,9 +369,19 @@ function doGet(e) {
     var params = (e && e.parameter) ? e.parameter : {};
     var action = params.action || 'read';
     
-    // ヘルスチェック（認証不要）
-    if (action === 'ping') {
-      return jsonResponse({ success: true, message: '自治会名簿API 稼働中', timestamp: new Date().toISOString() });
+    // ヘルスチェック＆基本設定読み込み（認証不要・合言葉は除外）
+    if (action === 'ping' || action === 'getPublicSettings') {
+      var s = fetchSettings();
+      return jsonResponse({
+        success: true,
+        message: '自治会名簿API 稼働中',
+        timestamp: new Date().toISOString(),
+        settings: {
+          communityName: s.communityName || '緑が丘自治会',
+          blocks: s.blocks || DEFAULT_BLOCKS_GAS,
+          roles: s.roles || DEFAULT_ROLES_GAS
+        }
+      });
     }
 
     // 合言葉（パスコード）の検証

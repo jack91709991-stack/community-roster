@@ -563,14 +563,18 @@ const api = {
     return { success: true, localOnly: true };
   },
 
-  // GAS接続テスト
+  // GAS接続テスト＆基本設定取得
   async testGasConnection(url) {
     if (!url) return { success: false, error: 'URLが入力されていません' };
     try {
       const res = await this.fetchWithTimeout(`${url}?action=ping&_t=${Date.now()}`, {}, 6000);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return { success: true, message: data.message || '接続成功' };
+      return {
+        success: true,
+        message: data.message || '接続成功',
+        settings: data.settings || null
+      };
     } catch (err) {
       return { success: false, error: err.message || '接続に失敗しました。URLや公開権限（全員）をご確認ください。' };
     }

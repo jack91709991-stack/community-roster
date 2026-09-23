@@ -107,6 +107,27 @@ function updateSyncStatus(status, text) {
   textElem.textContent = text || (status === 'online' ? '接続中' : status === 'syncing' ? '同期待ち' : status === 'offline' ? 'オフライン' : 'ローカル');
 }
 
+// スプレッドシートから読み込んだ基本設定（自治会名・ブロック・役職）を適用
+function applyBasicSettings(settings) {
+  if (!settings) return;
+  if (settings.communityName) {
+    api.setCommunityName(settings.communityName);
+  }
+  if (settings.blocks && Array.isArray(settings.blocks) && settings.blocks.length > 0) {
+    api.setLocalBlocks(settings.blocks);
+  }
+  if (settings.roles && Array.isArray(settings.roles) && settings.roles.length > 0) {
+    api.setLocalRoles(settings.roles);
+  }
+  state.editingBlocks = null;
+  state.editingRoles = null;
+  populateBlockAndBanDropdowns();
+  populateRoleDropdowns();
+  updateCommunityTitleDisplay();
+  renderBlockSettings();
+  renderRoleSettings();
+}
+
 // =============================================================================
 // 初期化 & イベント登録
 // =============================================================================
@@ -129,13 +150,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 既に認証済みの場合: 全データをロード
       await loadData();
     } else {
-      // 未認証の場合: スプレッドシートとの同期・疎通確認を行い、完了後に未認証ボタンを表示・押下可能にする
+      // 未認証の場合: スプレッドシートとの同期・疎通確認を行い、基本設定のみ反映（名簿は非表示）
       const pingRes = await api.testGasConnection(gasUrl);
       if (pingRes.success) {
         state.isSheetSynced = true;
+        if (pingRes.settings) {
+          applyBasicSettings(pingRes.settings);
+        }
+        state.members = [];
+        state.applications = [];
+        renderAllViews();
         updateSyncStatus('online', '同期完了');
         updateAuthUI();
-        showToast('スプレッドシートとの同期を確認しました。「🔒 未認証」から合言葉を入力できます。', '☁️');
       } else {
         state.isSheetSynced = false;
         updateSyncStatus('offline', '接続エラー');
@@ -415,6 +441,11 @@ function updatePendingBadges() {
 // タブ切り替え制御
 // =============================================================================
 function switchTab(targetTabId) {
+  // 管理者専用タブの保護
+  if (targetTabId === 'tab-admin' && !api.isAdmin()) {
+    targetTabId = 'tab-members';
+  }
+
   state.currentTab = targetTabId;
 
   // コンテンツの切り替え
@@ -437,9 +468,13 @@ function switchTab(targetTabId) {
   if (targetTabId === 'tab-applications') renderApplicationsList();
   if (targetTabId === 'tab-fees') renderFeeCollection();
   if (targetTabId === 'tab-reports') renderReportsTab();
-  if (targetTabId === 'tab-settings') {
+  if (targetTabId === 'tab-admin') {
     renderBlockSettings();
     renderRoleSettings();
+  }
+  if (targetTabId === 'tab-settings') {
+    const inputGas = document.getElementById('setting-gas-url');
+    if (inputGas) inputGas.value = api.getGasUrl();
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1710,9 +1745,15 @@ function initEventListeners() {
         const pingRes = await api.testGasConnection(gasUrl);
         if (pingRes.success) {
           state.isSheetSynced = true;
+          if (pingRes.settings) {
+            applyBasicSettings(pingRes.settings);
+          }
+          state.members = [];
+          state.applications = [];
+          renderAllViews();
           updateSyncStatus('online', '同期完了');
           updateAuthUI();
-          showToast('スプレッドシートとの同期を確認しました。「🔒 未認証」から合言葉を入力できます。', '✅');
+          showToast('スプレッドシートの設定を読み込みました。「🔒 未認証」から合言葉を入力できます。', '✅');
         } else {
           updateSyncStatus('offline', '接続エラー');
           updateAuthUI();
@@ -1857,14 +1898,23 @@ function initEventListeners() {
     if (res.success) {
       api.setGasUrl(url);
       state.isSheetSynced = true;
-      showToast('スプレッドシートへの接続・同期に成功しました！', '✅');
       updateSyncStatus('online', '同期完了');
-      updateAuthUI();
+
+      // スプレッドシートから基本設定（自治会名・ブロック・役職）を読み込み画面に反映
+      if (res.settings) {
+        applyBasicSettings(res.settings);
+      }
 
       if (!api.getPasscode()) {
-        showToast('右上に「🔒 未認証」ボタンが表示されました。合言葉を入力してください。', '🔑');
-        openAuthModal('スプレッドシートの同期が完了しました。役員合言葉（パスコード）を入力してください。');
+        // 未認証時: 承認画面は自動起動せず、名簿・申請は空のまま保持
+        state.members = [];
+        state.applications = [];
+        renderAllViews();
+        updateAuthUI();
+        showToast('スプレッドシートへの接続に成功し、設定を読み込みました！', '✅');
+        showToast('名簿データを閲覧・管理するには、右上の「🔒 未認証」から合言葉を入力してください。', '🔑');
       } else {
+        showToast('スプレッドシートへの接続・同期に成功しました！', '✅');
         await loadData();
       }
     } else {
@@ -2508,6 +2558,17 @@ function updateAuthUI() {
       btnAdd.title = '新規会員の登録（管理者権限が必要です）';
       btnAdd.style.opacity = '0.7';
     }
+  }
+
+  // システム管理タブの表示制御（管理者のみ表示）
+  const navAdmin = document.getElementById('nav-btn-admin');
+  const mobileNavAdmin = document.getElementById('mobile-nav-admin');
+  if (navAdmin) navAdmin.style.display = isAdmin ? 'inline-flex' : 'none';
+  if (mobileNavAdmin) mobileNavAdmin.style.display = isAdmin ? 'flex' : 'none';
+
+  // 非管理者なのにシステム管理タブを開いていた場合は名簿一覧タブへ安全に戻す
+  if (!isAdmin && state.currentTab === 'tab-admin') {
+    switchTab('tab-members');
   }
 }
 

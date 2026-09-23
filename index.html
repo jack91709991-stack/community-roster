@@ -35,6 +35,7 @@
       <button type="button" class="nav-tab-btn" data-tab="tab-dashboard">📊 統計・概況</button>
       <button type="button" class="nav-tab-btn" data-tab="tab-reports">🖨️ 帳票印刷</button>
       <button type="button" class="nav-tab-btn" data-tab="tab-settings">⚙️ 設定</button>
+      <button type="button" class="nav-tab-btn" data-tab="tab-admin" id="nav-btn-admin" style="display: none;">🛠️ システム管理</button>
     </nav>
 
     <!-- ヘッダー右側アクション -->
@@ -330,63 +331,9 @@
     </section>
 
     <!-- -----------------------------------------------------------------------
-         TAB 6: 設定・管理・外部連携
+         TAB 6: 設定（GAS連携・利用マニュアル）
          ----------------------------------------------------------------------- -->
     <section id="tab-settings" class="tab-content">
-      <!-- 自治会基本設定 -->
-      <div class="settings-section">
-        <div class="settings-section-title">🏠 自治会基本設定</div>
-        <div class="form-group">
-          <label class="form-label" for="setting-community-name">自治会・町内会名</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="setting-community-name" class="form-input" placeholder="例: 緑が丘自治会">
-            <button type="button" class="btn-primary" id="btn-save-community-name">更新</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ブロック・班の管理設定 -->
-      <div class="settings-section">
-        <div class="settings-section-title">🏘️ ブロック・班の編成設定</div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          自治会内のブロック（1ブロック〜5ブロック等）と所属する班を自由に設定・変更できます。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ編成が共有されます。
-        </p>
-
-        <div id="block-settings-container" class="block-settings-grid">
-          <!-- JSで動的生成 -->
-        </div>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
-          <button type="button" class="btn-secondary" id="btn-add-block">＋ 新しいブロックを追加</button>
-          <button type="button" class="btn-primary" id="btn-save-blocks" style="margin-left: auto;">💾 ブロック・班設定を保存</button>
-          <button type="button" class="btn-secondary" id="btn-reset-blocks">デフォルト編成に戻す</button>
-        </div>
-      </div>
-
-      <!-- 役職・係のマスタ設定 -->
-      <div class="settings-section">
-        <div class="settings-section-title">🎖️ 役員のマスタ設定</div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          自治会内の役員（会長、副会長、会計、書記、各種専門委員、顧問など）の選択肢を自由に追加・削除・編集できます（※「班長」は専用項目で管理されます）。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ役員一覧が共有されます。
-        </p>
-
-        <div class="role-settings-card">
-          <div id="role-chips-container" class="role-chips-container">
-            <!-- JSで動的生成 -->
-          </div>
-
-          <div class="role-add-row" style="margin-top: 12px;">
-            <input type="text" id="input-add-role" class="input-add-role" placeholder="新しい役員名 (例: 防犯交通部長、文化体育部長)">
-            <button type="button" class="btn-add-role" id="btn-add-role">＋ 役員を追加</button>
-          </div>
-        </div>
-
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
-          <button type="button" class="btn-primary" id="btn-save-roles" style="margin-left: auto;">💾 役員設定を保存</button>
-          <button type="button" class="btn-secondary" id="btn-reset-roles">デフォルト役員に戻す</button>
-        </div>
-      </div>
-
       <!-- Googleスプレッドシート・GAS連携設定 -->
       <div class="settings-section">
         <div class="settings-section-title">📊 Googleスプレッドシート連携 (GAS)</div>
@@ -411,6 +358,39 @@
             <li>アクセスできるユーザーを<strong>「全員」</strong>にしてデプロイ。</li>
             <li>発行されたURLを上記に入力して「保存して接続テスト」をクリックするだけで完了です！</li>
           </ol>
+        </div>
+      </div>
+
+      <!-- 役員向け利用マニュアル -->
+      <div class="settings-section">
+        <div class="settings-section-title">📖 役員向け利用マニュアル（配布・印刷用）</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          役員の年度交代時の引き継ぎや、新任役員への配布・説明用マニュアル（A4用紙対応）を印刷・ダウンロードできます。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <a href="manual.html" target="_blank" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            📄 画像付きマニュアル（A4印刷対応）を開く ↗
+          </a>
+          <button type="button" class="btn-secondary" id="btn-settings-open-help">
+            ❓ 画面上ですぐにガイドを確認
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------------------------
+         TAB 7: システム管理（管理者限定）
+         ----------------------------------------------------------------------- -->
+    <section id="tab-admin" class="tab-content">
+      <!-- 自治会基本設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🏠 自治会基本設定</div>
+        <div class="form-group">
+          <label class="form-label" for="setting-community-name">自治会・町内会名</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="setting-community-name" class="form-input" placeholder="例: 緑が丘自治会">
+            <button type="button" class="btn-primary" id="btn-save-community-name">更新</button>
+          </div>
         </div>
       </div>
 
@@ -461,6 +441,48 @@
         </div>
       </div>
 
+      <!-- ブロック・班の管理設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🏘️ ブロック・班の編成設定</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          自治会内のブロック（1ブロック〜5ブロック等）と所属する班を自由に設定・変更できます。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ編成が共有されます。
+        </p>
+
+        <div id="block-settings-container" class="block-settings-grid">
+          <!-- JSで動的生成 -->
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
+          <button type="button" class="btn-secondary" id="btn-add-block">＋ 新しいブロックを追加</button>
+          <button type="button" class="btn-primary" id="btn-save-blocks" style="margin-left: auto;">💾 ブロック・班設定を保存</button>
+          <button type="button" class="btn-secondary" id="btn-reset-blocks">デフォルト編成に戻す</button>
+        </div>
+      </div>
+
+      <!-- 役職・係のマスタ設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🎖️ 役員のマスタ設定</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          自治会内の役員（会長、副会長、会計、書記、各種専門委員、顧問など）の選択肢を自由に追加・削除・編集できます（※「班長」は専用項目で管理されます）。スプレッドシート連携時は自動的に「システム設定」シートに保存され、どの端末からアクセスしても同じ役員一覧が共有されます。
+        </p>
+
+        <div class="role-settings-card">
+          <div id="role-chips-container" class="role-chips-container">
+            <!-- JSで動的生成 -->
+          </div>
+
+          <div class="role-add-row" style="margin-top: 12px;">
+            <input type="text" id="input-add-role" class="input-add-role" placeholder="新しい役員名 (例: 防犯交通部長、文化体育部長)">
+            <button type="button" class="btn-add-role" id="btn-add-role">＋ 役員を追加</button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
+          <button type="button" class="btn-primary" id="btn-save-roles" style="margin-left: auto;">💾 役員設定を保存</button>
+          <button type="button" class="btn-secondary" id="btn-reset-roles">デフォルト役員に戻す</button>
+        </div>
+      </div>
+
       <!-- Googleフォーム連携について -->
       <div class="settings-section">
         <div class="settings-section-title">📋 Googleフォーム連携ガイド</div>
@@ -478,22 +500,6 @@
             <li>希望の班または近隣の目印</li>
             <li>その他ご要望・防災時の配慮希望など</li>
           </ul>
-        </div>
-      </div>
-
-      <!-- 役員向け利用マニュアル -->
-      <div class="settings-section">
-        <div class="settings-section-title">📖 役員向け利用マニュアル（配布・印刷用）</div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          役員の年度交代時の引き継ぎや、新任役員への配布・説明用マニュアル（A4用紙対応）を印刷・ダウンロードできます。
-        </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-          <a href="manual.html" target="_blank" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-            📄 画像付きマニュアル（A4印刷対応）を開く ↗
-          </a>
-          <button type="button" class="btn-secondary" id="btn-settings-open-help">
-            ❓ 画面上ですぐにガイドを確認
-          </button>
         </div>
       </div>
 
@@ -542,6 +548,10 @@
     <button type="button" class="bottom-nav-item" data-tab="tab-settings">
       <div class="bottom-nav-icon">⚙️</div>
       <div>設定</div>
+    </button>
+    <button type="button" class="bottom-nav-item" data-tab="tab-admin" id="mobile-nav-admin" style="display: none;">
+      <div class="bottom-nav-icon">🛠️</div>
+      <div>管理</div>
     </button>
   </nav>
 
@@ -898,8 +908,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20260923_6"></script>
-  <script src="js/api.js?v=20260923_6"></script>
-  <script src="js/app.js?v=20260923_6"></script>
+  <script src="js/data.js?v=20260923_7"></script>
+  <script src="js/api.js?v=20260923_7"></script>
+  <script src="js/app.js?v=20260923_7"></script>
 </body>
 </html>
