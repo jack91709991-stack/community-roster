@@ -228,6 +228,33 @@ function getSettingsSheet() {
 }
 
 /**
+ * スプレッドシートを開いた時に自動実行（メニュー追加＆初期シートの自動作成）
+ */
+function onOpen() {
+  try {
+    initSheets();
+    var ui = SpreadsheetApp.getUi();
+    ui.createMenu('自治会名簿システム')
+      .addItem('⚙️ システム設定シートを作成・最新化', 'initSheets')
+      .addToUi();
+  } catch (e) {
+    // Web Apps経由等でgetUiが取得できない場合の安全ガード
+  }
+}
+
+/**
+ * 必要な全シート（会員名簿、入会申込、システム設定）を生成・初期化
+ */
+function initSheets() {
+  getMasterSheet();
+  getFormSheet();
+  getSettingsSheet();
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast('「システム設定」シートを作成・最新化しました。合言葉の確認・変更が可能です。', '設定完了', 5);
+  } catch (e) {}
+}
+
+/**
  * システム設定（ブロック・班、役職マスタ、自治会名、合言葉）を取得
  */
 function fetchSettings(isInternal) {
