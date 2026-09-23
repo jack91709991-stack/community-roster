@@ -10,10 +10,15 @@ const STORAGE_KEYS = {
   COMMUNITY_NAME: 'community_roster_name',
   LAST_SYNC: 'community_roster_last_sync',
   BLOCKS: 'community_roster_blocks',
-  ROLES: 'community_roster_roles'
+  ROLES: 'community_roster_roles',
+  PASSCODE: 'community_roster_passcode',
+  AUTH_ROLE: 'community_roster_auth_role'
 };
 
 const api = {
+  // 認証イベントリスナー
+  onAuthRequired: null,
+
   getGasUrl() {
     return localStorage.getItem(STORAGE_KEYS.GAS_URL) || '';
   },
@@ -23,6 +28,77 @@ const api = {
       localStorage.setItem(STORAGE_KEYS.GAS_URL, url.trim());
     } else {
       localStorage.removeItem(STORAGE_KEYS.GAS_URL);
+    }
+  },
+
+  getPasscode() {
+    return localStorage.getItem(STORAGE_KEYS.PASSCODE) || '';
+  },
+
+  setPasscode(code) {
+    if (code) {
+      localStorage.setItem(STORAGE_KEYS.PASSCODE, String(code).trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.PASSCODE);
+    }
+  },
+
+  getAuthRole() {
+    return localStorage.getItem(STORAGE_KEYS.AUTH_ROLE) || 'officer';
+  },
+
+  setAuthRole(role) {
+    if (role) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_ROLE, role);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_ROLE);
+    }
+  },
+
+  isAdmin() {
+    return this.getAuthRole() === 'admin';
+  },
+
+  clearAuth() {
+    localStorage.removeItem(STORAGE_KEYS.PASSCODE);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_ROLE);
+  },
+
+  // パスコード検証API
+  async verifyPasscode(code, onStatusChange) {
+    const gasUrl = this.getGasUrl();
+    const trimmed = String(code || '').trim();
+    if (!trimmed) {
+      return { success: false, error: '合言葉（パスコード）を入力してください' };
+    }
+
+    // GAS未設定（ローカルモード）時
+    if (!gasUrl) {
+      const role = (trimmed === 'admin2026' || trimmed.toLowerCase() === 'admin') ? 'admin' : 'officer';
+      this.setPasscode(trimmed);
+      this.setAuthRole(role);
+      return { success: true, role: role, isLocal: true };
+    }
+
+    try {
+      if (onStatusChange) onStatusChange('syncing', '合言葉を検証中...');
+      const res = await this.fetchWithTimeout(`${gasUrl}?action=verifyAuth&passcode=${encodeURIComponent(trimmed)}&_t=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+      const data = await res.json();
+
+      if (data && data.success) {
+        this.setPasscode(trimmed);
+        this.setAuthRole(data.role || 'officer');
+        if (onStatusChange) onStatusChange('online', '認証成功');
+        return { success: true, role: data.role || 'officer' };
+      } else {
+        if (onStatusChange) onStatusChange('offline', '認証失敗');
+        return { success: false, error: data.error || '合言葉（パスコード）が正しくありません' };
+      }
+    } catch (err) {
+      console.error('パスコード検証通信エラー:', err);
+      if (onStatusChange) onStatusChange('offline', '通信エラー');
+      return { success: false, error: 'スプレッドシートとの通信に失敗しました。接続をご確認ください。' };
     }
   },
 
@@ -139,6 +215,7 @@ const api = {
   // 全データの同期・取得
   async loadAllData(onStatusChange) {
     const gasUrl = this.getGasUrl();
+    const passcode = this.getPasscode();
     
     // GAS URLが設定されていない場合はローカルデータを使用
     if (!gasUrl) {
@@ -152,9 +229,23 @@ const api = {
 
     if (onStatusChange) onStatusChange('syncing', 'スプレッドシートと同期中...');
     try {
-      const res = await this.fetchWithTimeout(`${gasUrl}?action=read&_t=${Date.now()}`);
+      const res = await this.fetchWithTimeout(`${gasUrl}?action=read&passcode=${encodeURIComponent(passcode)}&_t=${Date.now()}`);
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
       const data = await res.json();
+
+      // 認証エラーチェック
+      if (data && data.authError) {
+        if (onStatusChange) onStatusChange('offline', '合言葉（パスコード）の入力が必要です');
+        if (typeof this.onAuthRequired === 'function') {
+          this.onAuthRequired(data.error || '合言葉が正しくありません');
+        }
+        return {
+          members: [],
+          applications: [],
+          authError: true,
+          error: data.error
+        };
+      }
 
       if (data && data.success) {
         if (Array.isArray(data.members)) {
@@ -236,9 +327,13 @@ const api = {
         const res = await this.fetchWithTimeout(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: action, member: memberData })
+          body: JSON.stringify({ action: action, member: memberData, passcode: this.getPasscode() })
         });
         const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return { success: false, authError: true, error: result.error };
+        }
         if (result && result.success) {
           if (onStatusChange) onStatusChange('online', '保存完了');
         } else {
@@ -267,16 +362,22 @@ const api = {
     if (gasUrl) {
       if (onStatusChange) onStatusChange('syncing', '会費状況を同期中...');
       try {
-        await this.fetchWithTimeout(gasUrl, {
+        const res = await this.fetchWithTimeout(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: 'updateFeeStatus',
             id: memberId,
-            status: newStatus
+            status: newStatus,
+            passcode: this.getPasscode()
           }),
           timeoutMs: 4000
         });
+        const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return null;
+        }
         if (onStatusChange) onStatusChange('online', '会費状況を更新しました');
       } catch (err) {
         console.warn('会費同期失敗:', err);
@@ -304,15 +405,21 @@ const api = {
     if (gasUrl) {
       if (onStatusChange) onStatusChange('syncing', 'スプレッドシート更新中...');
       try {
-        await this.fetchWithTimeout(gasUrl, {
+        const res = await this.fetchWithTimeout(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: 'deleteMember',
             id: memberId,
-            hardDelete: hardDelete
+            hardDelete: hardDelete,
+            passcode: this.getPasscode()
           })
         });
+        const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return false;
+        }
         if (onStatusChange) onStatusChange('online', '削除・退会完了');
       } catch (err) {
         console.warn('GAS削除失敗:', err);
@@ -339,15 +446,21 @@ const api = {
     if (gasUrl) {
       if (onStatusChange) onStatusChange('syncing', '申請承認をスプレッドシートに反映中...');
       try {
-        await this.fetchWithTimeout(gasUrl, {
+        const res = await this.fetchWithTimeout(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: 'approveApplication',
             appId: appId,
-            member: memberData
+            member: memberData,
+            passcode: this.getPasscode()
           })
         });
+        const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return false;
+        }
         if (onStatusChange) onStatusChange('online', '承認・名簿登録完了');
       } catch (err) {
         console.warn('GAS申請承認同期失敗:', err);
@@ -370,15 +483,21 @@ const api = {
     const gasUrl = this.getGasUrl();
     if (gasUrl) {
       try {
-        await this.fetchWithTimeout(gasUrl, {
+        const res = await this.fetchWithTimeout(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: 'rejectApplication',
             appId: appId,
-            reason: reason
+            reason: reason,
+            passcode: this.getPasscode()
           })
         });
+        const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return false;
+        }
       } catch (err) {
         console.warn('GAS申請却下同期失敗:', err);
       }
@@ -409,10 +528,15 @@ const api = {
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify({
             action: 'updateSettings',
-            settings: settingsData
+            settings: settingsData,
+            passcode: this.getPasscode()
           })
         });
         const result = await res.json();
+        if (result && result.authError) {
+          if (typeof this.onAuthRequired === 'function') this.onAuthRequired(result.error);
+          return { success: false, authError: true, error: result.error };
+        }
         if (result && result.success) {
           if (onStatusChange) onStatusChange('online', 'スプレッドシートと接続中');
           return { success: true };

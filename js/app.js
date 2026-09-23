@@ -112,12 +112,19 @@ function updateSyncStatus(status, text) {
 document.addEventListener('DOMContentLoaded', async () => {
   initDropdownOptions();
   initEventListeners();
+  initAuthFeature();
+  updateAuthUI();
   updateCommunityTitleDisplay();
   renderBlockSettings();
   renderRoleSettings();
 
-  // 初回データロード
-  await loadData();
+  // GAS URLが設定されていてパスコードが未入力の場合は認証モーダルを表示
+  if (api.getGasUrl() && !api.getPasscode()) {
+    openAuthModal('名簿閲覧には役員合言葉（パスコード）の入力が必要です');
+  } else {
+    // 初回データロード
+    await loadData();
+  }
 });
 
 // セレクトボックスのオプション初期設定
@@ -287,6 +294,13 @@ async function loadData() {
     updateSyncStatus(status, text);
   });
 
+  if (result && result.authError) {
+    state.members = [];
+    state.applications = [];
+    renderAllViews();
+    return;
+  }
+
   state.members = result.members || [];
   state.applications = result.applications || [];
 
@@ -299,6 +313,19 @@ async function loadData() {
   renderBlockSettings();
   renderRoleSettings();
 
+  // 合言葉入力欄の反映（設定タブ）
+  if (result && result.settings) {
+    const officerInput = document.getElementById('setting-officer-passcode');
+    const adminInput = document.getElementById('setting-admin-passcode');
+    if (officerInput && result.settings.passcode) {
+      officerInput.value = result.settings.passcode;
+    }
+    if (adminInput && result.settings.adminPasscode) {
+      adminInput.value = result.settings.adminPasscode;
+    }
+  }
+
+  updateAuthUI();
   renderAllViews();
 }
 
@@ -1129,10 +1156,26 @@ function generateBlockBanLeadersReportHtml(fiscalYear, dateStr) {
 // モーダル操作: 会員登録・編集
 // =============================================================================
 function openAddMemberModal() {
+  if (!api.isAdmin()) {
+    alert('新規会員の登録には管理者権限が必要です。\n管理者の合言葉（パスコード）で再認証してください。');
+    openAuthModal('新規登録を行うには管理者合言葉を入力してください');
+    return;
+  }
+
   state.activeMember = null;
   document.getElementById('modal-member-title').textContent = '新規会員の登録';
   document.getElementById('edit-member-is-new').value = 'true';
-  document.getElementById('btn-delete-member').style.display = 'none';
+  const saveBtn = document.getElementById('btn-save-member');
+  const deleteBtn = document.getElementById('btn-delete-member');
+  if (saveBtn) saveBtn.style.display = 'inline-block';
+  if (deleteBtn) deleteBtn.style.display = 'none';
+
+  // 入力フィールドを活性化
+  const inputs = document.querySelectorAll('#form-member input, #form-member select');
+  inputs.forEach(el => {
+    if (el.id === 'm-id' || el.id === 'edit-member-is-new') return;
+    el.disabled = false;
+  });
 
   // フォーム初期化
   const nextId = getNextMemberId(state.members);
@@ -1163,9 +1206,24 @@ function openEditMemberModal(memberId) {
   if (!member) return;
 
   state.activeMember = member;
-  document.getElementById('modal-member-title').textContent = `会員情報の編集 (${member.id})`;
+  const isAdmin = api.isAdmin();
+
+  document.getElementById('modal-member-title').textContent = isAdmin
+    ? `会員情報の編集 (${member.id})`
+    : `会員情報の詳細 (${member.id}) [閲覧専用]`;
   document.getElementById('edit-member-is-new').value = 'false';
-  document.getElementById('btn-delete-member').style.display = 'block';
+  
+  const saveBtn = document.getElementById('btn-save-member');
+  const deleteBtn = document.getElementById('btn-delete-member');
+  if (saveBtn) saveBtn.style.display = isAdmin ? 'inline-block' : 'none';
+  if (deleteBtn) deleteBtn.style.display = isAdmin ? 'inline-block' : 'none';
+
+  // 一般役員の場合は閲覧専用（disabled）に設定
+  const inputs = document.querySelectorAll('#form-member input, #form-member select');
+  inputs.forEach(el => {
+    if (el.id === 'm-id' || el.id === 'edit-member-is-new') return;
+    el.disabled = !isAdmin;
+  });
 
   document.getElementById('m-id').value = member.id;
   const mBanSelect = document.getElementById('m-ban');
@@ -1206,10 +1264,20 @@ function openEditMemberModal(memberId) {
 function closeMemberModal() {
   document.getElementById('modal-member').classList.remove('active');
   state.activeMember = null;
+  // disabledを解除
+  const inputs = document.querySelectorAll('#form-member input, #form-member select');
+  inputs.forEach(el => {
+    if (el.id === 'm-id' || el.id === 'edit-member-is-new') return;
+    el.disabled = false;
+  });
 }
 
 // 会員保存処理
 async function handleSaveMember() {
+  if (!api.isAdmin()) {
+    alert('会員情報の保存には管理者権限が必要です。');
+    return;
+  }
   const name = document.getElementById('m-name').value.trim();
   const phone = document.getElementById('m-phone').value.trim();
   const address = document.getElementById('m-address').value.trim();
@@ -1790,6 +1858,10 @@ function initEventListeners() {
   const btnSaveBlocks = document.getElementById('btn-save-blocks');
   if (btnSaveBlocks) {
     btnSaveBlocks.addEventListener('click', async () => {
+      if (!api.isAdmin()) {
+        alert('ブロック・班設定の変更には管理者権限が必要です。');
+        return;
+      }
       syncEditingBlockNamesFromDom();
       if (!state.editingBlocks || state.editingBlocks.length === 0) {
         alert('ブロックが1つもありません。最低1つのブロックを設定してください。');
@@ -2097,6 +2169,10 @@ function handleRemoveRole(idx) {
 }
 
 async function handleSaveRoles() {
+  if (!api.isAdmin()) {
+    alert('役員マスタ設定の変更には管理者権限が必要です。');
+    return;
+  }
   if (!state.editingRoles || state.editingRoles.length === 0) {
     alert('役職が1つもありません。最低1つの役職を設定してください。');
     return;
@@ -2151,3 +2227,278 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// =============================================================================
+// 役員合言葉認証 & 権限管理
+// =============================================================================
+
+function initAuthFeature() {
+  // APIからの認証要求ハンドラ
+  api.onAuthRequired = (reason) => {
+    openAuthModal(reason || '合言葉（パスコード）の入力が必要です');
+  };
+
+  // ヘッダーの権限バッジクリック
+  const btnAuthStatus = document.getElementById('btn-auth-status');
+  if (btnAuthStatus) {
+    btnAuthStatus.addEventListener('click', () => {
+      openAuthModal();
+    });
+  }
+
+  // 認証モーダルの閉じるボタン
+  const btnCloseAuth = document.getElementById('btn-close-auth-modal');
+  if (btnCloseAuth) {
+    btnCloseAuth.addEventListener('click', closeAuthModal);
+  }
+
+  // 認証フォーム送信
+  const formAuth = document.getElementById('form-auth');
+  if (formAuth) {
+    formAuth.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleAuthSubmit();
+    });
+  }
+
+  // パスワード表示切替ボタン (👁️)
+  document.querySelectorAll('.btn-toggle-pw').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🔒';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    });
+  });
+
+  // 設定タブ: 合言葉保存ボタン
+  const btnSavePasscodes = document.getElementById('btn-save-passcodes');
+  if (btnSavePasscodes) {
+    btnSavePasscodes.addEventListener('click', handleSavePasscodes);
+  }
+
+  // 設定タブ: 再認証ボタン
+  const btnReAuth = document.getElementById('btn-re-auth');
+  if (btnReAuth) {
+    btnReAuth.addEventListener('click', () => {
+      openAuthModal('再認証を行います。合言葉を入力してください。');
+    });
+  }
+}
+
+// 権限UIの更新
+function updateAuthUI() {
+  const role = api.getAuthRole();
+  const isAdmin = api.isAdmin();
+  const hasPasscode = !!api.getPasscode();
+  const gasConfigured = !!api.getGasUrl();
+
+  // body のロールクラス設定
+  document.body.classList.toggle('role-officer', !isAdmin);
+  document.body.classList.toggle('role-admin', isAdmin);
+
+  // ヘッダーバッジの更新
+  const btnAuthStatus = document.getElementById('btn-auth-status');
+  const authIcon = document.getElementById('auth-role-icon');
+  const authLabel = document.getElementById('auth-role-label');
+
+  if (btnAuthStatus && authIcon && authLabel) {
+    btnAuthStatus.className = 'auth-role-badge';
+    if (!hasPasscode && gasConfigured) {
+      btnAuthStatus.classList.add('unauth');
+      authIcon.textContent = '🔒';
+      authLabel.textContent = '未認証';
+    } else if (isAdmin) {
+      btnAuthStatus.classList.add('admin');
+      authIcon.textContent = '👑';
+      authLabel.textContent = '管理者';
+    } else {
+      btnAuthStatus.classList.add('officer');
+      authIcon.textContent = '👤';
+      authLabel.textContent = '役員';
+    }
+  }
+
+  // 設定タブ内の権限表示更新
+  const settingsBadge = document.getElementById('settings-current-role-badge');
+  const settingsDesc = document.getElementById('settings-role-desc');
+  const adminPassInput = document.getElementById('setting-admin-passcode');
+  const btnSavePass = document.getElementById('btn-save-passcodes');
+
+  if (settingsBadge && settingsDesc) {
+    if (isAdmin) {
+      settingsBadge.className = 'auth-badge-pill admin';
+      settingsBadge.textContent = '👑 管理者権限';
+      settingsDesc.textContent = '名簿の新規追加・編集・削除、役職・ブロック設定、合言葉の変更を含む全機能が利用可能です。';
+      if (adminPassInput) adminPassInput.disabled = false;
+      if (btnSavePass) {
+        btnSavePass.disabled = false;
+        btnSavePass.style.opacity = '1';
+        btnSavePass.style.cursor = 'pointer';
+      }
+    } else {
+      settingsBadge.className = 'auth-badge-pill officer';
+      settingsBadge.textContent = '👤 一般役員権限（閲覧・印刷専用）';
+      settingsDesc.textContent = '名簿の閲覧、帳票印刷、会費集金チェックが可能です。名簿の編集や各種設定の変更は管理者のみ行えます。';
+      if (adminPassInput) adminPassInput.disabled = true;
+      if (btnSavePass) {
+        btnSavePass.disabled = true;
+        btnSavePass.style.opacity = '0.5';
+        btnSavePass.style.cursor = 'not-allowed';
+      }
+    }
+  }
+
+  // 新規登録ボタンの見た目・ツールチップ
+  const btnAdd = document.getElementById('btn-open-add-member');
+  if (btnAdd) {
+    if (isAdmin) {
+      btnAdd.title = '新規会員の登録';
+      btnAdd.style.opacity = '1';
+    } else {
+      btnAdd.title = '新規会員の登録（管理者権限が必要です）';
+      btnAdd.style.opacity = '0.7';
+    }
+  }
+}
+
+// 認証モーダルを開く
+function openAuthModal(reasonMessage = '') {
+  const modal = document.getElementById('modal-auth');
+  const input = document.getElementById('auth-input-passcode');
+  const errorMsg = document.getElementById('auth-error-msg');
+  const btnClose = document.getElementById('btn-close-auth-modal');
+  if (!modal) return;
+
+  // 既に合言葉がある場合は×ボタンで閉じられるようにする
+  if (btnClose) {
+    btnClose.style.display = api.getPasscode() ? 'block' : 'none';
+  }
+
+  if (input) {
+    input.value = '';
+  }
+
+  if (errorMsg) {
+    if (reasonMessage) {
+      errorMsg.textContent = reasonMessage;
+      errorMsg.style.display = 'block';
+    } else {
+      errorMsg.style.display = 'none';
+    }
+  }
+
+  modal.classList.add('active');
+  setTimeout(() => {
+    if (input) input.focus();
+  }, 100);
+}
+
+// 認証モーダルを閉じる
+function closeAuthModal() {
+  const modal = document.getElementById('modal-auth');
+  if (modal) modal.classList.remove('active');
+}
+
+// 認証の実行
+async function handleAuthSubmit() {
+  const input = document.getElementById('auth-input-passcode');
+  const errorMsg = document.getElementById('auth-error-msg');
+  const btnSubmit = document.getElementById('btn-submit-auth');
+  const btnSpinner = document.getElementById('auth-btn-spinner');
+  const btnText = document.getElementById('auth-btn-text');
+
+  const code = (input ? input.value : '').trim();
+  if (!code) {
+    if (errorMsg) {
+      errorMsg.textContent = '合言葉を入力してください';
+      errorMsg.style.display = 'block';
+    }
+    return;
+  }
+
+  // UIを処理中に
+  if (btnSubmit) btnSubmit.disabled = true;
+  if (btnSpinner) btnSpinner.style.display = 'inline-block';
+  if (btnText) btnText.textContent = '照合中...';
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  const result = await api.verifyPasscode(code, (status, text) => {
+    updateSyncStatus(status, text);
+  });
+
+  // UI復元
+  if (btnSubmit) btnSubmit.disabled = false;
+  if (btnSpinner) btnSpinner.style.display = 'none';
+  if (btnText) btnText.textContent = '認証して名簿を開く';
+
+  if (result.success) {
+    closeAuthModal();
+    updateAuthUI();
+    const roleName = result.role === 'admin' ? '👑 管理者' : '👤 一般役員';
+    showToast(`認証成功: ${roleName}としてログインしました`, '🔑');
+    playTone('success');
+    await loadData();
+  } else {
+    if (errorMsg) {
+      errorMsg.textContent = result.error || '合言葉が正しくありません';
+      errorMsg.style.display = 'block';
+    }
+    if (input) {
+      input.focus();
+      input.select();
+    }
+    playTone('delete');
+  }
+}
+
+// 設定タブからの合言葉保存
+async function handleSavePasscodes() {
+  if (!api.isAdmin()) {
+    alert('合言葉の変更には管理者権限が必要です。');
+    return;
+  }
+
+  const officerPass = (document.getElementById('setting-officer-passcode')?.value || '').trim();
+  const adminPass = (document.getElementById('setting-admin-passcode')?.value || '').trim();
+
+  if (!officerPass) {
+    alert('一般役員用合言葉を入力してください。空欄にはできません。');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-passcodes');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+  }
+
+  const res = await api.saveSettings({
+    passcode: officerPass,
+    adminPasscode: adminPass
+  }, (status, text) => {
+    updateSyncStatus(status, text);
+  });
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '💾 合言葉設定をスプレッドシートに保存';
+  }
+
+  if (res && res.success) {
+    // 自身のセッションパスコードも更新（管理者パスコードが入力されていればそれをセット）
+    api.setPasscode(adminPass || officerPass);
+    showToast('合言葉設定をスプレッドシートに保存しました！', '🔐');
+    playTone('success');
+    updateAuthUI();
+  } else {
+    alert(`合言葉の保存に失敗しました: ${res?.error || '通信エラー'}`);
+  }
+}
+

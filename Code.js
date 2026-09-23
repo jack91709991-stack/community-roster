@@ -214,7 +214,9 @@ function getSettingsSheet() {
     var initialRows = [
       ["blocks", JSON.stringify(DEFAULT_BLOCKS_GAS), "ブロック・班の編成設定", now],
       ["roles", JSON.stringify(DEFAULT_ROLES_GAS), "役職・係のマスタ設定", now],
-      ["communityName", "緑が丘自治会", "自治会・町内会名", now]
+      ["communityName", "緑が丘自治会", "自治会・町内会名", now],
+      ["passcode", "roster2026", "役員用合言葉（閲覧・帳票印刷・集金チェック用）", now],
+      ["adminPasscode", "admin2026", "管理者用合言葉（名簿編集・削除・設定変更用）", now]
     ];
     sheet.getRange(2, 1, initialRows.length, SETTINGS_HEADERS.length).setValues(initialRows);
     sheet.setColumnWidth(1, 140);
@@ -226,15 +228,17 @@ function getSettingsSheet() {
 }
 
 /**
- * システム設定（ブロック・班、役職マスタ、自治会名）を取得
+ * システム設定（ブロック・班、役職マスタ、自治会名、合言葉）を取得
  */
-function fetchSettings() {
+function fetchSettings(isInternal) {
   var sheet = getSettingsSheet();
   var lastRow = sheet.getLastRow();
   var settings = {
     blocks: DEFAULT_BLOCKS_GAS,
     roles: DEFAULT_ROLES_GAS,
-    communityName: "緑が丘自治会"
+    communityName: "緑が丘自治会",
+    passcode: "roster2026",
+    adminPasscode: "admin2026"
   };
   if (lastRow <= 1) return settings;
 
@@ -269,9 +273,50 @@ function fetchSettings() {
       } catch (e) {}
     } else if (key === 'communityName') {
       if (val) settings.communityName = String(val).trim();
+    } else if (key === 'passcode') {
+      settings.passcode = val !== undefined ? String(val).trim() : '';
+    } else if (key === 'adminPasscode') {
+      settings.adminPasscode = val !== undefined ? String(val).trim() : '';
     }
   }
   return settings;
+}
+
+/**
+ * 合言葉（パスコード）の認証検証
+ * @param {string} inputCode - 入力されたパスコード
+ * @param {string} requiredRole - 要求される権限 ('officer' または 'admin')
+ * @returns {object} { ok: boolean, role: string, error?: string, authError?: boolean }
+ */
+function verifyPasscode(inputCode, requiredRole) {
+  var settings = fetchSettings(true);
+  var officerPass = String(settings.passcode || '').trim();
+  var adminPass = String(settings.adminPasscode || '').trim();
+
+  // スプレッドシート側でパスコードが全く設定されていない場合は認証スキップ（後方互換）
+  if (!officerPass && !adminPass) {
+    return { ok: true, role: 'admin' };
+  }
+
+  var code = String(inputCode || '').trim();
+  if (!code) {
+    return { ok: false, authError: true, error: '合言葉（パスコード）を入力してください' };
+  }
+
+  // 管理者パスコード一致
+  if (adminPass && code === adminPass) {
+    return { ok: true, role: 'admin' };
+  }
+
+  // 一般役員パスコード一致（または管理者パスコード未設定時の一般パスコード）
+  if (officerPass && code === officerPass) {
+    if (requiredRole === 'admin' && adminPass) {
+      return { ok: false, authError: true, error: 'この操作には管理者権限（管理者パスコード）が必要です', requireAdmin: true };
+    }
+    return { ok: true, role: adminPass ? 'officer' : 'admin' };
+  }
+
+  return { ok: false, authError: true, error: '合言葉（パスコード）が正しくありません' };
 }
 
 /**
@@ -297,7 +342,9 @@ function saveSettings(newSettings) {
   var items = [
     { key: 'blocks', val: newSettings.blocks ? JSON.stringify(newSettings.blocks) : null, desc: 'ブロック・班の編成設定' },
     { key: 'roles', val: filteredRoles ? JSON.stringify(filteredRoles) : null, desc: '役員のマスタ設定' },
-    { key: 'communityName', val: newSettings.communityName ? String(newSettings.communityName).trim() : null, desc: '自治会・町内会名' }
+    { key: 'communityName', val: newSettings.communityName ? String(newSettings.communityName).trim() : null, desc: '自治会・町内会名' },
+    { key: 'passcode', val: newSettings.passcode !== undefined ? String(newSettings.passcode).trim() : null, desc: '役員用合言葉（閲覧・帳票印刷・集金用）' },
+    { key: 'adminPasscode', val: newSettings.adminPasscode !== undefined ? String(newSettings.adminPasscode).trim() : null, desc: '管理者用合言葉（名簿編集・設定用）' }
   ];
 
   items.forEach(function(item) {
@@ -311,7 +358,7 @@ function saveSettings(newSettings) {
     }
   });
 
-  return { success: true, settings: fetchSettings() };
+  return { success: true, settings: fetchSettings(true) };
 }
 
 /**
@@ -319,18 +366,50 @@ function saveSettings(newSettings) {
  */
 function doGet(e) {
   try {
-    var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : 'read';
+    var params = (e && e.parameter) ? e.parameter : {};
+    var action = params.action || 'read';
+    
+    // ヘルスチェック（認証不要）
+    if (action === 'ping') {
+      return jsonResponse({ success: true, message: '自治会名簿API 稼働中', timestamp: new Date().toISOString() });
+    }
+
+    // 合言葉（パスコード）の検証
+    var inputPasscode = params.passcode || '';
+    var auth = verifyPasscode(inputPasscode, 'officer');
+
+    // パスコード検証API
+    if (action === 'verifyAuth') {
+      return jsonResponse({
+        success: auth.ok,
+        role: auth.role,
+        authError: auth.authError,
+        error: auth.error
+      });
+    }
+
+    // 認証失敗時はデータを一切返さず拒絶
+    if (!auth.ok) {
+      return jsonResponse({
+        success: false,
+        authError: true,
+        error: auth.error || '合言葉（パスコード）が正しくありません'
+      });
+    }
     
     if (action === 'read' || action === 'getAll') {
-      return jsonResponse(fetchAllData());
+      return jsonResponse(fetchAllData(auth.role));
     } else if (action === 'getMembers') {
-      return jsonResponse({ success: true, members: fetchMembers() });
+      return jsonResponse({ success: true, members: fetchMembers(), authRole: auth.role });
     } else if (action === 'getApplications') {
-      return jsonResponse({ success: true, applications: fetchApplications() });
+      return jsonResponse({ success: true, applications: fetchApplications(), authRole: auth.role });
     } else if (action === 'getSettings') {
-      return jsonResponse({ success: true, settings: fetchSettings() });
-    } else if (action === 'ping') {
-      return jsonResponse({ success: true, message: '自治会名簿API 稼働中', timestamp: new Date().toISOString() });
+      var s = fetchSettings();
+      if (auth.role !== 'admin') {
+        delete s.passcode;
+        delete s.adminPasscode;
+      }
+      return jsonResponse({ success: true, settings: s, authRole: auth.role });
     }
     
     return jsonResponse({ success: false, error: '不明なGETアクションです: ' + action });
@@ -350,6 +429,19 @@ function doPost(e) {
     
     var payload = JSON.parse(e.postData.contents);
     var action = payload.action;
+
+    // パスコード認証チェック（会費更新のみ一般役員でも許可、それ以外は管理者権限が必要）
+    var requiredRole = (action === 'updateFeeStatus') ? 'officer' : 'admin';
+    var auth = verifyPasscode(payload.passcode, requiredRole);
+
+    if (!auth.ok) {
+      return jsonResponse({
+        success: false,
+        authError: true,
+        requireAdmin: auth.requireAdmin,
+        error: auth.error || '権限エラー: 合言葉（パスコード）が無効です'
+      });
+    }
     
     if (action === 'createMember' || action === 'add') {
       return jsonResponse(createMember(payload.member));
@@ -378,15 +470,20 @@ function doPost(e) {
 /**
  * 全データ取得（名簿＋入会申請＋システム設定）
  */
-function fetchAllData() {
+function fetchAllData(role) {
   var members = fetchMembers();
   var applications = fetchApplications();
   var settings = fetchSettings();
+  if (role !== 'admin') {
+    delete settings.passcode;
+    delete settings.adminPasscode;
+  }
   return {
     success: true,
     members: members,
     applications: applications,
     settings: settings,
+    authRole: role,
     timestamp: new Date().toISOString()
   };
 }

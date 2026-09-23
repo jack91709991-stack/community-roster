@@ -43,6 +43,10 @@
         <span class="sync-dot"></span>
         <span id="sync-status-text">ローカル</span>
       </div>
+      <button type="button" class="auth-role-badge" id="btn-auth-status" title="クリックして合言葉（パスコード）の再入力・変更">
+        <span id="auth-role-icon">🔒</span>
+        <span id="auth-role-label">認証中</span>
+      </button>
       <button type="button" class="btn-header-action" id="btn-open-add-member">
         <span>＋</span><span>新規登録</span>
       </button>
@@ -407,6 +411,52 @@
         </div>
       </div>
 
+      <!-- 役員合言葉（パスコード）・アクセス権限管理 -->
+      <div class="settings-section" id="section-auth-settings">
+        <div class="settings-section-title">🔐 役員合言葉（パスコード）・アクセス権限管理</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          役員の年度交代時には、スプレッドシート側の合言葉を変更するだけで、旧役員の端末からのアクセスを一括遮断できます。合言葉はスプレッドシートの「システム設定」シート、または本画面（管理者権限時）から変更可能です。
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-color);">現在の利用権限:</span>
+            <span id="settings-current-role-badge" class="auth-badge-pill admin">👑 管理者権限</span>
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);" id="settings-role-desc">
+            名簿の編集・削除・新規登録、役職やブロック設定、合言葉の変更を含む全機能が利用できます。
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="setting-officer-passcode">
+              一般役員用合言葉（閲覧・印刷・会費チェック用）
+            </label>
+            <div class="input-with-button">
+              <input type="password" id="setting-officer-passcode" class="form-input" placeholder="例: roster2026">
+              <button type="button" class="btn-toggle-pw" data-target="setting-officer-passcode" title="表示切替">👁️</button>
+            </div>
+            <div class="form-help">一般役員が名簿閲覧や帳票印刷、集金チェックを行うための合言葉です。</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setting-admin-passcode">
+              管理者用合言葉（フルアクセス・名簿編集用）
+            </label>
+            <div class="input-with-button">
+              <input type="password" id="setting-admin-passcode" class="form-input" placeholder="例: admin2026">
+              <button type="button" class="btn-toggle-pw" data-target="setting-admin-passcode" title="表示切替">👁️</button>
+            </div>
+            <div class="form-help">名簿の新規追加・編集・削除や設定変更ができる管理者専用合言葉です。</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+          <button type="button" class="btn-primary" id="btn-save-passcodes">💾 合言葉設定をスプレッドシートに保存</button>
+          <button type="button" class="btn-secondary" id="btn-re-auth">🔑 別の合言葉で再認証する</button>
+        </div>
+      </div>
+
       <!-- Googleフォーム連携について -->
       <div class="settings-section">
         <div class="settings-section-title">📋 Googleフォーム連携ガイド</div>
@@ -693,6 +743,58 @@
         <button type="button" class="btn-primary" id="btn-confirm-approve" style="background: var(--success);">
           ✅ 承認して名簿に追加
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       モーダル: 役員認証（合言葉・パスコード入力）
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-auth" style="z-index: 2000;">
+    <div class="modal-dialog auth-dialog" style="max-width: 420px;">
+      <div class="modal-header auth-modal-header" style="justify-content: center; position: relative;">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">🔒</span>
+          <span>役員認証（合言葉）</span>
+        </div>
+        <button type="button" class="btn-modal-close" id="btn-close-auth-modal" style="position: absolute; right: 16px; display: none;">×</button>
+      </div>
+      <div class="modal-body" style="padding: 24px 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="width: 56px; height: 56px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 12px; color: var(--primary);">
+            🔑
+          </div>
+          <p style="font-size: 0.9rem; color: var(--text-color); margin-bottom: 6px; font-weight: 600;">
+            自治会員名簿の閲覧・管理
+          </p>
+          <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+            個人情報保護のため、役員に配布された<strong>合言葉（パスコード）</strong>を入力してください。
+          </p>
+        </div>
+
+        <form id="form-auth" onsubmit="return false;">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" for="auth-input-passcode" style="font-size: 0.85rem; font-weight: 600;">
+              合言葉（パスコード）
+            </label>
+            <div class="input-with-button">
+              <input type="password" id="auth-input-passcode" class="form-input" placeholder="合言葉を入力..." autocomplete="current-password" required style="font-size: 1rem; padding: 10px 14px;">
+              <button type="button" class="btn-toggle-pw" data-target="auth-input-passcode" title="表示切替">👁️</button>
+            </div>
+            <div id="auth-error-msg" class="auth-error-msg" style="display: none;"></div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btn-submit-auth" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span id="auth-btn-spinner" class="spinner" style="display: none; width: 18px; height: 18px; border-width: 2px;"></span>
+            <span id="auth-btn-text">認証して名簿を開く</span>
+          </button>
+        </form>
+
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border-color); font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+          💡 <strong>権限について:</strong><br>
+          ・「一般役員用合言葉」: 名簿の閲覧・集金チェック・印刷が可能です。<br>
+          ・「管理者用合言葉」: 名簿の登録・編集・削除や各種設定が可能です。
+        </div>
       </div>
     </div>
   </div>
