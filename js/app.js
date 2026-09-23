@@ -2346,7 +2346,7 @@ function updateAuthUI() {
 
   if (btnAuthStatus && authIcon && authLabel) {
     btnAuthStatus.className = 'auth-role-badge';
-    if (!hasPasscode && gasConfigured) {
+    if (!hasPasscode) {
       btnAuthStatus.classList.add('unauth');
       authIcon.textContent = '🔒';
       authLabel.textContent = '未認証';
