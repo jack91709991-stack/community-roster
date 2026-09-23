@@ -112,6 +112,7 @@ function updateSyncStatus(status, text) {
 document.addEventListener('DOMContentLoaded', async () => {
   initDropdownOptions();
   initEventListeners();
+  setMemberViewMode('table');
   initAuthFeature();
   updateAuthUI();
   updateCommunityTitleDisplay();
@@ -126,6 +127,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadData();
   }
 });
+
+// 名簿の表示モード切り替え（カード / テーブル）
+function setMemberViewMode(mode) {
+  state.desktopViewMode = mode;
+  const btnCards = document.getElementById('btn-view-cards');
+  const btnTable = document.getElementById('btn-view-table');
+  const cardsList = document.getElementById('member-cards-list');
+  const tableCont = document.getElementById('member-table-container');
+
+  if (!btnCards || !btnTable || !cardsList || !tableCont) return;
+
+  if (mode === 'cards') {
+    btnCards.classList.add('primary');
+    btnTable.classList.remove('primary');
+    cardsList.style.display = 'flex';
+    tableCont.style.display = 'none';
+  } else {
+    // デフォルト: table
+    btnTable.classList.add('primary');
+    btnCards.classList.remove('primary');
+    cardsList.style.display = 'none';
+    tableCont.style.display = 'block';
+  }
+}
 
 // セレクトボックスのオプション初期設定
 function initDropdownOptions() {
@@ -1696,25 +1721,11 @@ function initEventListeners() {
     });
   });
 
-  // 表示切り替えボタン（PC用）
+  // 表示切り替えボタン（カード / テーブル）
   const btnCards = document.getElementById('btn-view-cards');
   const btnTable = document.getElementById('btn-view-table');
-  const cardsList = document.getElementById('member-cards-list');
-  const tableCont = document.getElementById('member-table-container');
-
-  btnCards.addEventListener('click', () => {
-    btnCards.classList.add('primary');
-    btnTable.classList.remove('primary');
-    cardsList.style.display = 'flex';
-    tableCont.style.display = 'none';
-  });
-
-  btnTable.addEventListener('click', () => {
-    btnTable.classList.add('primary');
-    btnCards.classList.remove('primary');
-    cardsList.style.display = 'none';
-    tableCont.style.display = 'block';
-  });
+  if (btnCards) btnCards.addEventListener('click', () => setMemberViewMode('cards'));
+  if (btnTable) btnTable.addEventListener('click', () => setMemberViewMode('table'));
 
   // 申請フィルターボタン
   document.getElementById('btn-app-filter-pending').addEventListener('click', (e) => {

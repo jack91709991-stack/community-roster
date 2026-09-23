@@ -418,7 +418,7 @@ body {
    会員名簿カード表示 (モバイル最適化)
    -------------------------------------------------------------------------- */
 .member-cards-grid {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 10px;
 }
@@ -711,12 +711,13 @@ body {
    PC用テーブル表示 (768px以上で切り替え可能)
    -------------------------------------------------------------------------- */
 .desktop-table-container {
-  display: none;
+  display: block;
   background: #ffffff;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .roster-table {
