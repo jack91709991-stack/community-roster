@@ -24,6 +24,7 @@ const state = {
   editingRoles: null,
   activeMember: null,
   activeApp: null,
+  isSheetSynced: false,
   audioCtx: null
 };
 
@@ -119,12 +120,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderBlockSettings();
   renderRoleSettings();
 
-  // GAS URLが設定されていてパスコードが未入力の場合は認証モーダルを表示
-  if (api.getGasUrl() && !api.getPasscode()) {
-    openAuthModal('名簿閲覧には役員合言葉（パスコード）の入力が必要です');
+  const gasUrl = api.getGasUrl();
+  const passcode = api.getPasscode();
+
+  if (gasUrl) {
+    updateSyncStatus('syncing', 'スプレッドシートと同期中...');
+    if (passcode) {
+      // 既に認証済みの場合: 全データをロード
+      await loadData();
+    } else {
+      // 未認証の場合: スプレッドシートとの同期・疎通確認を行い、完了後に未認証ボタンを表示・押下可能にする
+      const pingRes = await api.testGasConnection(gasUrl);
+      if (pingRes.success) {
+        state.isSheetSynced = true;
+        updateSyncStatus('online', '同期完了');
+        updateAuthUI();
+        showToast('スプレッドシートとの同期を確認しました。「🔒 未認証」から合言葉を入力できます。', '☁️');
+      } else {
+        state.isSheetSynced = false;
+        updateSyncStatus('offline', '接続エラー');
+        updateAuthUI();
+      }
+    }
   } else {
-    // 初回データロード
-    await loadData();
+    // GAS URL未設定の場合: ローカルモード（未認証ボタンは非表示）
+    updateSyncStatus('local', 'ローカルモード（GAS未設定）');
+    updateAuthUI();
   }
 });
 
@@ -324,6 +345,10 @@ async function loadData() {
     state.applications = [];
     renderAllViews();
     return;
+  }
+
+  if (result && !result.error) {
+    state.isSheetSynced = true;
   }
 
   state.members = result.members || [];
@@ -1673,8 +1698,26 @@ function initEventListeners() {
   const syncIndicator = document.getElementById('sync-indicator');
   if (syncIndicator) {
     syncIndicator.addEventListener('click', async () => {
+      const gasUrl = api.getGasUrl();
+      if (!gasUrl) {
+        showToast('スプレッドシート（GAS URL）が未設定です。「⚙️ 設定」タブで連携を行ってください。', '⚠️');
+        return;
+      }
       showToast('スプレッドシートと再同期中...', '🔄');
-      await loadData();
+      if (api.getPasscode()) {
+        await loadData();
+      } else {
+        const pingRes = await api.testGasConnection(gasUrl);
+        if (pingRes.success) {
+          state.isSheetSynced = true;
+          updateSyncStatus('online', '同期完了');
+          updateAuthUI();
+          showToast('スプレッドシートとの同期を確認しました。「🔒 未認証」から合言葉を入力できます。', '✅');
+        } else {
+          updateSyncStatus('offline', '接続エラー');
+          updateAuthUI();
+        }
+      }
     });
   }
 
@@ -1813,11 +1856,21 @@ function initEventListeners() {
     const res = await api.testGasConnection(url);
     if (res.success) {
       api.setGasUrl(url);
-      showToast('スプレッドシートへの接続に成功しました！', '✅');
-      updateSyncStatus('online', '接続成功');
-      await loadData();
+      state.isSheetSynced = true;
+      showToast('スプレッドシートへの接続・同期に成功しました！', '✅');
+      updateSyncStatus('online', '同期完了');
+      updateAuthUI();
+
+      if (!api.getPasscode()) {
+        showToast('右上に「🔒 未認証」ボタンが表示されました。合言葉を入力してください。', '🔑');
+        openAuthModal('スプレッドシートの同期が完了しました。役員合言葉（パスコード）を入力してください。');
+      } else {
+        await loadData();
+      }
     } else {
+      state.isSheetSynced = false;
       updateSyncStatus('offline', '接続エラー');
+      updateAuthUI();
       alert(`接続テストに失敗しました。\nエラー: ${res.error}\n\n【確認点】\n1. デプロイ時に「アクセスできるユーザー: 全員」を選択していますか？\n2. URL末尾が「/exec」になっていますか？`);
     }
   });
@@ -1825,8 +1878,10 @@ function initEventListeners() {
   document.getElementById('btn-clear-gas-url').addEventListener('click', () => {
     if (confirm('GAS URLの設定を解除し、ローカルモード（スタンドアロン）に戻しますか？')) {
       api.setGasUrl('');
+      state.isSheetSynced = false;
       settingGasInput.value = '';
       updateSyncStatus('local', 'ローカルモード');
+      updateAuthUI();
       showToast('ローカルモードに切り替えました', '💻');
     }
   });
@@ -2370,18 +2425,46 @@ function updateAuthUI() {
 
   if (btnAuthStatus && authIcon && authLabel) {
     btnAuthStatus.className = 'auth-role-badge';
+    const isSheetSynced = !!state.isSheetSynced;
+
     if (!hasPasscode) {
       btnAuthStatus.classList.add('unauth');
       authIcon.textContent = '🔒';
       authLabel.textContent = '未認証';
-    } else if (isAdmin) {
-      btnAuthStatus.classList.add('admin');
-      authIcon.textContent = '👑';
-      authLabel.textContent = '管理者';
+
+      // スプレッドシート同期後に表示・押下可能にする
+      if (isSheetSynced) {
+        btnAuthStatus.style.display = 'inline-flex';
+        btnAuthStatus.disabled = false;
+        btnAuthStatus.removeAttribute('disabled');
+        btnAuthStatus.title = 'クリックして役員合言葉を入力し、名簿を開く';
+        btnAuthStatus.style.cursor = 'pointer';
+        btnAuthStatus.style.opacity = '1';
+      } else {
+        // 同期前（GAS URL未設定、または起動時接続確認前）は非表示・押下不可
+        btnAuthStatus.style.display = 'none';
+        btnAuthStatus.disabled = true;
+        btnAuthStatus.setAttribute('disabled', 'disabled');
+      }
     } else {
-      btnAuthStatus.classList.add('officer');
-      authIcon.textContent = '👤';
-      authLabel.textContent = '役員';
+      // 認証済み（管理者 / 役員）の場合は常に表示・押下可能
+      btnAuthStatus.style.display = 'inline-flex';
+      btnAuthStatus.disabled = false;
+      btnAuthStatus.removeAttribute('disabled');
+      btnAuthStatus.style.cursor = 'pointer';
+      btnAuthStatus.style.opacity = '1';
+
+      if (isAdmin) {
+        btnAuthStatus.classList.add('admin');
+        authIcon.textContent = '👑';
+        authLabel.textContent = '管理者';
+        btnAuthStatus.title = '管理者として認証中（クリックで合言葉変更・ログアウト）';
+      } else {
+        btnAuthStatus.classList.add('officer');
+        authIcon.textContent = '👤';
+        authLabel.textContent = '役員';
+        btnAuthStatus.title = '役員として認証中（クリックで合言葉変更・ログアウト）';
+      }
     }
   }
 
