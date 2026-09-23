@@ -1,4 +1,4 @@
-const CACHE_NAME = 'community-roster-v2';
+const CACHE_NAME = 'community-roster-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,9 @@ const ASSETS = [
   './icons/icon-192.svg',
   './icons/icon-512.svg',
   './images/manual_auth.jpg',
+  './images/manual_auth_screen.jpg',
   './images/manual_sync.jpg',
+  './images/manual_gas_setup.jpg',
   './images/manual_features.jpg'
 ];
 
