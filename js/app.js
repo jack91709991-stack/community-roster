@@ -1681,6 +1681,28 @@ function initEventListeners() {
   // 新規登録ボタン
   document.getElementById('btn-open-add-member').addEventListener('click', openAddMemberModal);
 
+  // ヘルプボタン & モーダル
+  const btnOpenHelp = document.getElementById('btn-open-help');
+  const btnSettingsHelp = document.getElementById('btn-settings-open-help');
+  const modalHelp = document.getElementById('modal-help');
+  const btnCloseHelp = document.getElementById('btn-close-help-modal');
+  const btnDoneHelp = document.getElementById('btn-done-help');
+
+  [btnOpenHelp, btnSettingsHelp].forEach(btn => {
+    if (btn && modalHelp) {
+      btn.addEventListener('click', () => {
+        modalHelp.classList.add('active');
+      });
+    }
+  });
+  [btnCloseHelp, btnDoneHelp].forEach(btn => {
+    if (btn && modalHelp) {
+      btn.addEventListener('click', () => {
+        modalHelp.classList.remove('active');
+      });
+    }
+  });
+
   // 検索入力 & クリア
   const searchInput = document.getElementById('member-search-input');
   const clearBtn = document.getElementById('btn-clear-search');

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自治会員名簿管理システム 初回設定・利用マニュアル</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #eff6ff;
+      --secondary: #0284c7;
+      --accent: #10b981;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .manual-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    header.manual-header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .manual-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .manual-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .btn-print {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .btn-print:hover {
+      background: #172554;
+    }
+    .btn-back {
+      background: #f1f5f9;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-card {
+      margin-bottom: 36px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .section-card:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .section-heading {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      background: var(--primary-light);
+      padding: 10px 14px;
+      border-radius: 6px;
+      border-left: 5px solid var(--primary);
+    }
+    .step-badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .guide-img {
+      width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 14px 0 20px 0;
+      background: #f8fafc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .step-list {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    .step-list li {
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .table-custom {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
+    .table-custom th, .table-custom td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .table-custom th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .alert-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin: 14px 0;
+    }
+    .alert-box strong {
+      color: #b45309;
+    }
+    .faq-item {
+      margin-bottom: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 16px;
+    }
+    .faq-q {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .faq-a {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    
+    /* 印刷スタイル */
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .manual-container {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .btn-print, .btn-back {
+        display: none !important;
+      }
+      .section-card {
+        page-break-inside: avoid;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+      }
+      .guide-img {
+        max-height: 240px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="manual-container">
+    <header class="manual-header">
+      <div>
+        <div class="manual-title">👥 自治会員名簿管理システム</div>
+        <div class="manual-subtitle">役員向け 初回設定・基本操作ガイドブック（令和8年度改定版）</div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="index.html" class="btn-back">⬅ アプリに戻る</a>
+        <button type="button" class="btn-print" onclick="window.print()">🖨️ A4印刷 / PDF保存</button>
+      </div>
+    </header>
+
+    <!-- STEP 1: アクセスとホーム画面追加 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 1</span>
+        <span>スマホ・PCからアクセス ＆ ホーム画面への追加</span>
+      </h2>
+      <p>本システムは、ブラウザだけで動く最新のWebアプリ（PWA）です。アプリストアからの面倒なインストール作業は不要です。</p>
+      
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 14px; border-radius: 6px; margin: 14px 0; font-size: 0.95rem;">
+        <strong>🌐 システム公開URL:</strong><br>
+        <a href="https://jack91709991-stack.github.io/community-roster/" target="_blank" style="color: #1d4ed8; word-break: break-all; font-weight: 600;">
+          https://jack91709991-stack.github.io/community-roster/
+        </a>
+      </div>
+
+      <h3 style="font-size: 1.05rem; margin: 12px 0 6px 0;">📲 スマートフォンのホーム画面に追加する手順（推奨）</h3>
+      <ol class="step-list">
+        <li><strong>iPhone（Safari）の場合:</strong> 画面下の「共有ボタン（四角から矢印）」をタップし、「ホーム画面に追加」を選択します。</li>
+        <li><strong>Android（Chrome）の場合:</strong> 右上の「メニュー（3点リーダー）」をタップし、「ホーム画面に追加」または「アプリをインストール」を選択します。</li>
+      </ol>
+      <p style="font-size: 0.88rem; color: var(--text-muted);">※ ホーム画面に追加すると、次回からスマートフォンのアプリアイコンから1タップで全画面起動できます。</p>
+    </section>
+
+    <!-- STEP 2: 役員合言葉の入力 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 2</span>
+        <span>初回起動時の「🔒 役員合言葉」の入力</span>
+      </h2>
+      <p>個人情報保護のため、初回起動時および年度交代時には「役員合言葉（パスコード）」の入力画面が表示されます。</p>
+
+      <img src="images/manual_auth.jpg" alt="役員認証の案内" class="guide-img">
+
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th style="width: 25%;">権限ロール</th>
+            <th style="width: 25%;">合言葉（初期設定）</th>
+            <th>利用できる主な機能</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>👑 管理者</strong></td>
+            <td><code>admin2026</code></td>
+            <td>
+              <strong>全機能（フルアクセス）</strong><br>
+              ・会員名簿の新規登録、編集、退会・削除<br>
+              ・ブロック・班や役職マスタの設定変更<br>
+              ・合言葉自体の変更、スプレッドシート連携URLの設定
+            </td>
+          </tr>
+          <tr>
+            <td><strong>👤 一般役員</strong></td>
+            <td><code>roster2026</code></td>
+            <td>
+              <strong>閲覧・集金・印刷専用</strong><br>
+              ・名簿一覧の閲覧（電話番号、住所、家族構成等）<br>
+              ・「ブロック長・班長名簿」などのA4帳票印刷<br>
+              ・会費集金チェック（集金済みの即時更新）<br>
+              <span style="color: var(--text-muted); font-size: 0.82rem;">※名簿の編集や削除は自動的にロックされ、誤操作を防ぎます</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert-box">
+        <strong>💡 役員交代時のポイント:</strong><br>
+        年度が変わった時は、管理者がスプレッドシート側（または設定画面）で合言葉を変更するだけで、旧役員のスマートフォンからの名簿アクセスが一括遮断されます。個人のGoogleアカウントを収集・管理する必要はありません。
+      </div>
+    </section>
+
+    <!-- STEP 3: スプレッドシート連携（管理者向け） -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 3</span>
+        <span>Googleスプレッドシートとの初回連携（管理者のみ）</span>
+      </h2>
+      <p>自治会のGoogleスプレッドシートとクラウド自動同期を設定する手順です。一度設定すれば、役員全員のスマホとPCにリアルタイムでデータが反映されます。</p>
+
+      <img src="images/manual_sync.jpg" alt="スプレッドシート連携の案内" class="guide-img">
+
+      <ol class="step-list">
+        <li>自治会のGoogleスプレッドシートを開き、「拡張機能」>「Apps Script」を開きます。</li>
+        <li>本システム同梱の <code>Code.js</code> のコードを丸ごと貼り付けて保存します。</li>
+        <li>画面右上の「デプロイ」>「新しいデプロイ」を開き、種類に「ウェブアプリ」を選択します。</li>
+        <li>アクセスできるユーザーを<strong>「全員」</strong>に設定して「デプロイ」をクリックします。</li>
+        <li>発行された <strong>Web App URL</strong>（<code>https://script.google.com/macros/s/.../exec</code>）をコピーします。</li>
+        <li>名簿アプリの「⚙️ 設定」タブを開き、URL欄に貼り付けて<strong>「保存して接続テスト」</strong>をクリックすれば完了です！</li>
+      </ol>
+    </section>
+
+    <!-- STEP 4: 日常の使い方 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 4</span>
+        <span>日常の基本操作ガイド（名簿検索・集金・帳票印刷）</span>
+      </h2>
+      <p>役員の日常業務で最もよく使われる3つの主要機能です。</p>
+
+      <img src="images/manual_features.jpg" alt="日常の主な機能" class="guide-img">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 14px;">
+        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px;">
+          <h4 style="color: var(--primary); margin-bottom: 6px;">1. 名簿一覧・検索</h4>
+          <p style="font-size: 0.88rem; color: var(--text);">
+            ・画面右上の「📑 テーブル」「🗂️ カード」で表示形式を自由に切り替え可能。<br>
+            ・検索バーで氏名、電話番号、住所などを瞬時にあいまい検索。<br>
+            ・ブロック、班、役職、会費納入状況で絞り込み可能。
+          </p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px;">
+          <h4 style="color: var(--accent); margin-bottom: 6px;">2. 会費集金チェック</h4>
+          <p style="font-size: 0.88rem; color: var(--text);">
+            ・「💴 会費集金」タブを開き、担当の班を選択。<br>
+            ・住民から会費を受け取ったら、名前の横のボタンを1タップするだけで「納入済」に更新！<br>
+            ・集金進捗率（％）と合計金額がリアルタイムに集計されます。
+          </p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 8px;">
+          <h4 style="color: #d97706; margin-bottom: 6px;">3. 帳票印刷（班長名簿）</h4>
+          <p style="font-size: 0.88rem; color: var(--text);">
+            ・「🖨️ 帳票印刷」タブを開きます。<br>
+            ・「令和〇年度 ブロック長、班長名簿」がA4縦に最適化されてプレビュー表示。<br>
+            ・「この帳票を印刷する」を押すだけで、用紙1枚に収まる綺麗な配布用名簿がプリンターやコンビニ印刷に出力されます。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5: よくある質問 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span>❓</span>
+        <span>よくある質問（Q&A）</span>
+      </h2>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. 役員の合言葉を忘れてしまいました。</div>
+        <div class="faq-a">A. 自治会長または名簿担当管理者にお問い合わせください。管理者はスプレッドシートの「システム設定」シート、または管理画面の設定タブから合言葉を確認・変更できます。</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. スマホから名簿の文字を修正しようとするとボタンが押せません。</div>
+        <div class="faq-a">A. 現在「一般役員」としてログインしているため、安全のため閲覧専用モードになっています。名簿の編集が必要な場合は、右上の役員バッジをクリックして「管理者合言葉」でログインし直してください。</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Q. 電波が届かない集会所や屋外でも使えますか？</div>
+        <div class="faq-a">A. はい、オフラインキャッシュ機能を備えているため、一時的に通信が切れても手元のスマホに保存された名簿を閲覧できます。電波が戻った際に自動的に再同期されます。</div>
+      </div>
+    </section>
+
+    <footer style="text-align: center; margin-top: 30px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid #e2e8f0; padding-top: 16px;">
+      緑が丘自治会 会員名簿管理システム サポート窓口 | 発行日: 2026年9月
+    </footer>
+  </div>
+
+</body>
+</html>

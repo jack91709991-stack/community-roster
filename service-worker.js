@@ -2,13 +2,17 @@ const CACHE_NAME = 'community-roster-v2';
 const ASSETS = [
   './',
   './index.html',
+  './manual.html',
   './css/style.css',
   './js/app.js',
   './js/data.js',
   './js/api.js',
   './manifest.json',
   './icons/icon-192.svg',
-  './icons/icon-512.svg'
+  './icons/icon-512.svg',
+  './images/manual_auth.jpg',
+  './images/manual_sync.jpg',
+  './images/manual_features.jpg'
 ];
 
 self.addEventListener('install', (e) => {

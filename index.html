@@ -47,6 +47,9 @@
         <span id="auth-role-icon">🔒</span>
         <span id="auth-role-label">認証中</span>
       </button>
+      <button type="button" class="btn-header-help" id="btn-open-help" title="使い方・初期設定マニュアル">
+        <span>❓</span><span>ヘルプ</span>
+      </button>
       <button type="button" class="btn-header-action" id="btn-open-add-member">
         <span>＋</span><span>新規登録</span>
       </button>
@@ -477,6 +480,22 @@
         </div>
       </div>
 
+      <!-- 役員向け利用マニュアル -->
+      <div class="settings-section">
+        <div class="settings-section-title">📖 役員向け利用マニュアル（配布・印刷用）</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          役員の年度交代時の引き継ぎや、新任役員への配布・説明用マニュアル（A4用紙対応）を印刷・ダウンロードできます。
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <a href="manual.html" target="_blank" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            📄 画像付きマニュアル（A4印刷対応）を開く ↗
+          </a>
+          <button type="button" class="btn-secondary" id="btn-settings-open-help">
+            ❓ 画面上ですぐにガイドを確認
+          </button>
+        </div>
+      </div>
+
       <!-- データ管理・印刷 -->
       <div class="settings-section">
         <div class="settings-section-title">📄 データ出力・印刷</div>
@@ -795,6 +814,77 @@
           ・「一般役員用合言葉」: 名簿の閲覧・集金チェック・印刷が可能です。<br>
           ・「管理者用合言葉」: 名簿の登録・編集・削除や各種設定が可能です。
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       モーダル: 使い方・初期設定ヘルプ
+       ========================================================================= -->
+  <div class="modal-backdrop" id="modal-help" style="z-index: 1500;">
+    <div class="modal-dialog help-dialog" style="max-width: 780px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📖</span>
+          <span>使い方・初期設定ガイド</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="manual.html" target="_blank" class="btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; text-decoration: none;" title="A4印刷用マニュアルを別タブで開く">
+            🖨️ 印刷用マニュアルを開く
+          </a>
+          <button type="button" class="btn-modal-close" id="btn-close-help-modal">×</button>
+        </div>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; padding: 20px;">
+        
+        <!-- STEP 1: 役員合言葉 -->
+        <div style="margin-bottom: 24px;">
+          <h3 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="background: var(--primary); color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">STEP 1</span>
+            <span>役員認証（合言葉・パスコード）の入力</span>
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 8px;">
+            個人情報保護のため、役員ごとに権限が分かれています。年度始めに配布された合言葉を入力してください。
+          </p>
+          <img src="images/manual_auth.jpg" alt="役員認証" style="width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
+          <div style="font-size: 0.82rem; background: #eff6ff; padding: 10px; border-radius: 6px; border-left: 4px solid var(--primary);">
+            ・<strong>一般役員合言葉（初期値: roster2026）:</strong> 名簿閲覧、集金チェック、帳票印刷のみ可能（編集不可の安全モード）。<br>
+            ・<strong>管理者合言葉（初期値: admin2026）:</strong> 名簿の新規追加・編集・削除、役職・合言葉の設定変更が可能です。
+          </div>
+        </div>
+
+        <!-- STEP 2: スプレッドシート連携 -->
+        <div style="margin-bottom: 24px;">
+          <h3 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="background: var(--primary); color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">STEP 2</span>
+            <span>Googleスプレッドシートとの自動同期（管理者向け）</span>
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 8px;">
+            Googleスプレッドシートの「Apps Script」から本システムの <code>Code.js</code> をデプロイし、発行されたURLを「⚙️ 設定」タブで登録すると、全役員の端末とクラウド自動同期されます。
+          </p>
+          <img src="images/manual_sync.jpg" alt="スプレッドシート連携" style="width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
+        </div>
+
+        <!-- STEP 3: 日常の主な機能 -->
+        <div style="margin-bottom: 16px;">
+          <h3 style="color: var(--primary); font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span style="background: var(--primary); color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">STEP 3</span>
+            <span>日常の基本機能（名簿検索・集金・帳票印刷）</span>
+          </h3>
+          <img src="images/manual_features.jpg" alt="主な機能" style="width: 100%; max-height: 260px; object-fit: contain; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; margin-bottom: 8px;">
+          <ul style="font-size: 0.84rem; padding-left: 20px; line-height: 1.5; color: var(--text-color);">
+            <li><strong>名簿一覧:</strong> 画面右上の「📑 テーブル」「🗂️ カード」で切り替え。氏名や電話番号であいまい検索。</li>
+            <li><strong>会費集金:</strong> 担当班を選び、集金完了時にボタンを1タップするだけでリアルタイム反映。</li>
+            <li><strong>帳票印刷:</strong> 「令和〇年度 ブロック長、班長名簿」などを用紙1枚のA4縦で綺麗に出力。</li>
+          </ul>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <a href="manual.html" target="_blank" class="btn-secondary" style="text-decoration: none;">
+          📄 全体マニュアル・A4印刷ページを開く ↗
+        </a>
+        <button type="button" class="btn-primary" id="btn-done-help">閉じる</button>
       </div>
     </div>
   </div>
