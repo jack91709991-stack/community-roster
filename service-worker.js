@@ -1,4 +1,4 @@
-const CACHE_NAME = 'community-roster-v1';
+const CACHE_NAME = 'community-roster-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Old cache cleared:', key);
             return caches.delete(key);
           }
         })
@@ -33,25 +34,24 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Network-First: ネットワーク接続時は常に最新を取得し、オフライン時のみキャッシュを使用
 self.addEventListener('fetch', (e) => {
-  // Only cache GET requests within same origin or static files
   if (e.request.method !== 'GET') return;
-  
-  // Do not intercept GAS API calls
   if (e.request.url.includes('script.google.com')) return;
 
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch background update for next time
-        fetch(e.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(e.request);
-    })
+    fetch(e.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const resClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // オフライン時はキャッシュから返す
+        return caches.match(e.request);
+      })
   );
 });
+

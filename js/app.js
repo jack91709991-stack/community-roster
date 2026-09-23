@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 名簿の表示モード切り替え（カード / テーブル）
 function setMemberViewMode(mode) {
-  state.desktopViewMode = mode;
+  state.desktopViewMode = mode || 'table';
   const btnCards = document.getElementById('btn-view-cards');
   const btnTable = document.getElementById('btn-view-table');
   const cardsList = document.getElementById('member-cards-list');
@@ -138,17 +138,17 @@ function setMemberViewMode(mode) {
 
   if (!btnCards || !btnTable || !cardsList || !tableCont) return;
 
-  if (mode === 'cards') {
+  if (state.desktopViewMode === 'cards') {
     btnCards.classList.add('primary');
     btnTable.classList.remove('primary');
-    cardsList.style.display = 'flex';
-    tableCont.style.display = 'none';
+    cardsList.style.setProperty('display', 'flex', 'important');
+    tableCont.style.setProperty('display', 'none', 'important');
   } else {
     // デフォルト: table
     btnTable.classList.add('primary');
     btnCards.classList.remove('primary');
-    cardsList.style.display = 'none';
-    tableCont.style.display = 'block';
+    cardsList.style.setProperty('display', 'none', 'important');
+    tableCont.style.setProperty('display', 'block', 'important');
   }
 }
 
@@ -502,6 +502,9 @@ function renderMembersList() {
       tableBody.innerHTML = filtered.map(m => createMemberTableRowHtml(m)).join('');
     }
   }
+
+  // 表示モード（テーブル / カード）の同期
+  setMemberViewMode(state.desktopViewMode || 'table');
 }
 
 function createMemberCardHtml(m) {
