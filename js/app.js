@@ -141,6 +141,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDropdownOptions();
   initEventListeners();
   setMemberViewMode('table');
+
+  // 絞り込み条件（ブロック・班など）の開閉状態を復元（PCはデフォルト開、モバイルはデフォルト閉）
+  const savedFilterOpen = localStorage.getItem('community_roster_filter_open');
+  if (savedFilterOpen !== null) {
+    toggleFilterPills(savedFilterOpen === '1');
+  } else {
+    toggleFilterPills(window.innerWidth >= 768);
+  }
+
   initAuthFeature();
   updateAuthUI();
   updateCommunityTitleDisplay();
@@ -545,6 +554,9 @@ function renderMembersList() {
   const countLabel = document.getElementById('member-count-label');
   if (countLabel) countLabel.textContent = `該当: ${filtered.length}件`;
 
+  // 絞り込みアクティブ状態（バッジ・条件チップ）を更新
+  updateFilterActiveState();
+
   // 1. モバイル用カードリスト描画
   const cardsContainer = document.getElementById('member-cards-list');
   if (cardsContainer) {
@@ -571,6 +583,133 @@ function renderMembersList() {
 
   // 表示モード（テーブル / カード）の同期
   setMemberViewMode(state.desktopViewMode || 'table');
+}
+
+// 絞り込みエリアの開閉切り替え
+function toggleFilterPills(forcedState) {
+  const pillsRow = document.getElementById('filter-pills-row');
+  const toggleBtn = document.getElementById('btn-toggle-filters');
+  const toggleIcon = document.getElementById('toggle-filter-icon');
+  const toggleText = document.getElementById('toggle-filter-text');
+  if (!pillsRow) return;
+
+  const isCurrentOpen = pillsRow.style.display !== 'none';
+  const shouldOpen = typeof forcedState === 'boolean' ? forcedState : !isCurrentOpen;
+
+  if (shouldOpen) {
+    pillsRow.style.display = 'flex';
+    if (toggleBtn) toggleBtn.classList.add('expanded');
+    if (toggleIcon) toggleIcon.textContent = '－';
+    if (toggleText) toggleText.textContent = '閉じる';
+  } else {
+    pillsRow.style.display = 'none';
+    if (toggleBtn) toggleBtn.classList.remove('expanded');
+    if (toggleIcon) toggleIcon.textContent = '＋';
+    if (toggleText) toggleText.textContent = '絞り込み';
+  }
+
+  try {
+    localStorage.setItem('community_roster_filter_open', shouldOpen ? '1' : '0');
+  } catch (e) {
+    // ignore
+  }
+}
+
+// 絞り込み条件のアクティブ状況を更新（バッジ、チップ）
+function updateFilterActiveState() {
+  const badge = document.getElementById('active-filter-badge');
+  const toggleBtn = document.getElementById('btn-toggle-filters');
+  const summaryCont = document.getElementById('active-filters-summary');
+
+  const filterKeys = [
+    { key: 'block', label: 'ブロック', getEl: () => document.getElementById('filter-block') },
+    { key: 'ban', label: '班', getEl: () => document.getElementById('filter-ban') },
+    { key: 'role', label: '役員', getEl: () => document.getElementById('filter-role') },
+    { key: 'ban_leader', label: '班長', getEl: () => document.getElementById('filter-ban-leader') },
+    { key: 'fee', label: '会費', getEl: () => document.getElementById('filter-fee') },
+    { key: 'circulation', label: '回覧', getEl: () => document.getElementById('filter-circulation') },
+    { key: 'status', label: '状態', getEl: () => document.getElementById('filter-status') }
+  ];
+
+  let activeCount = 0;
+  const activeChips = [];
+
+  filterKeys.forEach(f => {
+    const val = state.filters[f.key];
+    if (val && val !== 'all') {
+      activeCount++;
+      activeChips.push({
+        key: f.key,
+        label: f.label,
+        value: val
+      });
+    }
+  });
+
+  // バッジ更新
+  if (badge) {
+    if (activeCount > 0) {
+      badge.textContent = activeCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // トグルボタン強調
+  if (toggleBtn) {
+    if (activeCount > 0) {
+      toggleBtn.classList.add('has-active');
+    } else {
+      toggleBtn.classList.remove('has-active');
+    }
+  }
+
+  // チップ表示
+  if (summaryCont) {
+    if (activeChips.length === 0) {
+      summaryCont.innerHTML = '';
+    } else {
+      summaryCont.innerHTML = activeChips.map(c => `
+        <span class="active-filter-chip">
+          <span>${escapeHtml(c.label)}: ${escapeHtml(c.value)}</span>
+          <button type="button" class="active-filter-chip-remove" data-filter-key="${escapeHtml(c.key)}" title="${escapeHtml(c.label)}の絞り込みを解除">×</button>
+        </span>
+      `).join('');
+    }
+  }
+}
+
+// 絞り込み条件の全リセット
+function resetAllFilters() {
+  state.filters = {
+    block: 'all',
+    ban: 'all',
+    role: 'all',
+    ban_leader: 'all',
+    fee: 'all',
+    circulation: 'all',
+    status: 'all'
+  };
+
+  const elBlock = document.getElementById('filter-block');
+  const elBan = document.getElementById('filter-ban');
+  const elRole = document.getElementById('filter-role');
+  const elBanLeader = document.getElementById('filter-ban-leader');
+  const elFee = document.getElementById('filter-fee');
+  const elCirc = document.getElementById('filter-circulation');
+  const elStatus = document.getElementById('filter-status');
+
+  if (elBlock) elBlock.value = 'all';
+  updateFilterBanDropdown();
+  if (elBan) elBan.value = 'all';
+  if (elRole) elRole.value = 'all';
+  if (elBanLeader) elBanLeader.value = 'all';
+  if (elFee) elFee.value = 'all';
+  if (elCirc) elCirc.value = 'all';
+  if (elStatus) elStatus.value = 'all';
+
+  renderMembersList();
 }
 
 function createMemberCardHtml(m) {
@@ -1835,6 +1974,44 @@ function initEventListeners() {
       renderMembersList();
     });
   });
+
+  // 絞り込みトグルボタン（＋ / －）
+  const btnToggleFilters = document.getElementById('btn-toggle-filters');
+  if (btnToggleFilters) {
+    btnToggleFilters.addEventListener('click', () => {
+      toggleFilterPills();
+    });
+  }
+
+  // 絞り込み全リセットボタン
+  const btnResetFilters = document.getElementById('btn-reset-filters');
+  if (btnResetFilters) {
+    btnResetFilters.addEventListener('click', () => {
+      resetAllFilters();
+    });
+  }
+
+  // 条件チップの「×」クリックで個別解除
+  const activeFiltersSummary = document.getElementById('active-filters-summary');
+  if (activeFiltersSummary) {
+    activeFiltersSummary.addEventListener('click', (e) => {
+      const btn = e.target.closest('.active-filter-chip-remove');
+      if (!btn) return;
+      const filterKey = btn.getAttribute('data-filter-key');
+      if (!filterKey) return;
+
+      state.filters[filterKey] = 'all';
+      if (filterKey === 'block') {
+        const elBlock = document.getElementById('filter-block');
+        if (elBlock) elBlock.value = 'all';
+        updateFilterBanDropdown();
+      } else {
+        const el = document.getElementById(`filter-${filterKey.replace('_', '-')}`);
+        if (el) el.value = 'all';
+      }
+      renderMembersList();
+    });
+  }
 
   // 表示切り替えボタン（カード / テーブル）
   const btnCards = document.getElementById('btn-view-cards');

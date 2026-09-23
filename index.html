@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="apple-touch-icon" href="icons/icon-192.svg">
-  <link rel="stylesheet" href="css/style.css?v=20260923_4">
+  <link rel="stylesheet" href="css/style.css?v=20260923_5">
 </head>
 <body>
 
@@ -82,9 +82,15 @@
             <input type="text" id="member-search-input" class="search-input" placeholder="氏名、フリガナ、電話、住所、IDで検索...">
             <button type="button" id="btn-clear-search" class="btn-clear-search" title="検索クリア">×</button>
           </div>
+          <button type="button" id="btn-toggle-filters" class="btn-filter-toggle" title="ブロック・班・役職などの絞り込み条件を表示/非表示">
+            <span class="filter-toggle-icon" id="toggle-filter-icon">＋</span>
+            <span class="filter-toggle-text" id="toggle-filter-text">絞り込み</span>
+            <span class="active-filter-badge" id="active-filter-badge" style="display: none;">0</span>
+          </button>
         </div>
 
-        <div class="filter-pills-row">
+        <!-- 展開・折りたたみ可能な詳細条件 -->
+        <div class="filter-pills-row" id="filter-pills-row" style="display: none;">
           <select id="filter-block" class="filter-select">
             <option value="all">ブロック: すべて</option>
           </select>
@@ -123,6 +129,14 @@
             <option value="転出退会">状態: 転出退会のみ</option>
           </select>
 
+          <button type="button" id="btn-reset-filters" class="btn-reset-filters" title="絞り込み条件を初期状態に戻す">
+            <span>🔄 リセット</span>
+          </button>
+        </div>
+
+        <!-- フィルターサマリー・該当件数表示行 -->
+        <div class="filter-meta-row">
+          <div class="active-filters-summary" id="active-filters-summary"></div>
           <span class="filter-count-label" id="member-count-label">該当: 0件</span>
         </div>
       </div>
@@ -908,8 +922,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20260923_9"></script>
-  <script src="js/api.js?v=20260923_9"></script>
-  <script src="js/app.js?v=20260923_9"></script>
+  <script src="js/data.js?v=20260923_10"></script>
+  <script src="js/api.js?v=20260923_10"></script>
+  <script src="js/app.js?v=20260923_10"></script>
 </body>
 </html>
