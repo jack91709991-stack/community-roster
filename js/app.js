@@ -575,7 +575,7 @@ function renderMembersList() {
   const tableBody = document.getElementById('member-table-body');
   if (tableBody) {
     if (filtered.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="13" style="text-align: center; padding: 24px; color: var(--text-muted);">一致する会員はいません</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 24px; color: var(--text-muted);">一致する会員はいません</td></tr>`;
     } else {
       tableBody.innerHTML = filtered.map(m => createMemberTableRowHtml(m)).join('');
     }
@@ -730,8 +730,6 @@ function createMemberCardHtml(m) {
     : `<span class="badge badge-circulation-paper">📄 紙</span>`;
 
   const feeClass = m.fee_status === '納入済' ? 'badge-paid' : m.fee_status === '未納' ? 'badge-unpaid' : 'badge-exempt';
-  const supportBadge = m.support_needed && m.support_needed !== 'なし' 
-    ? `<span class="badge badge-support">⚠️ ${m.support_needed}</span>` : '';
 
   const banLeaderBadge = isBanLeader ? `<span class="badge badge-ban-leader">🚩 班長</span>` : '';
   const officerBadge = isOfficer ? `<span class="badge badge-role highlight">🎖️ ${escapeHtml(m.role)}</span>` : '';
@@ -753,7 +751,6 @@ function createMemberCardHtml(m) {
           ${banLeaderBadge}
           ${officerBadge}
           <span class="badge ${feeClass}">${escapeHtml(m.fee_status || '未納')}</span>
-          ${supportBadge}
         </div>
         <span class="badge-id">${escapeHtml(m.id)}</span>
       </div>
@@ -761,7 +758,6 @@ function createMemberCardHtml(m) {
       <div class="member-name-row">
         <div class="member-name">${escapeHtml(m.name)}${nameWithdrawnTag}</div>
         <div class="member-kana">${escapeHtml(m.kana)}</div>
-        <span class="member-household-pill">世帯: ${m.household_count || 1}名</span>
       </div>
 
       <div class="member-info-row">
@@ -775,12 +771,6 @@ function createMemberCardHtml(m) {
         ${m.phone2 ? `<span style="margin: 0 4px; color: var(--text-light);">/</span><a href="tel:${escapeHtml(m.phone2)}" class="member-phone-link" onclick="event.stopPropagation();" title="電話番号2">${escapeHtml(m.phone2)}</a>` : ''}
         ${m.email ? `<span style="margin-left: 8px; font-size: 0.8rem; color: var(--text-light);">✉️ ${escapeHtml(m.email)}</span>` : ''}
       </div>
-
-      ${m.family_members ? `
-        <div class="member-family-summary">
-          <strong>家族:</strong> ${escapeHtml(m.family_members)}
-        </div>
-      ` : ''}
 
       <div class="member-card-footer">
         <button type="button" class="btn-card-action primary" onclick="event.stopPropagation(); openEditMemberModal('${m.id}')">
@@ -809,8 +799,6 @@ function createMemberTableRowHtml(m) {
     : `<span class="badge badge-circulation-paper">📄 紙</span>`;
 
   const feeClass = m.fee_status === '納入済' ? 'badge-paid' : m.fee_status === '未納' ? 'badge-unpaid' : 'badge-exempt';
-  const supportText = m.support_needed && m.support_needed !== 'なし'
-    ? `<span class="badge badge-support">${escapeHtml(m.support_needed)}</span>` : '-';
   const rowClass = isWithdrawn ? 'row-withdrawn' : isSuspended ? 'row-suspended' : '';
   const nameWithdrawnTag = isWithdrawn ? `<span class="member-withdrawn-tag">退会済</span>` : '';
 
@@ -833,12 +821,10 @@ function createMemberTableRowHtml(m) {
         <a href="tel:${escapeHtml(m.phone)}" class="member-phone-link" onclick="event.stopPropagation();">${escapeHtml(m.phone)}</a>
         ${m.phone2 ? `<div style="font-size: 0.78rem; margin-top: 2px;"><a href="tel:${escapeHtml(m.phone2)}" class="member-phone-link" onclick="event.stopPropagation();" style="color: var(--text-muted);" title="電話番号2">${escapeHtml(m.phone2)}</a></div>` : ''}
       </td>
-      <td style="max-width: 220px; font-size: 0.82rem;">${escapeHtml(m.address)}</td>
-      <td style="text-align: center;">${m.household_count || 1}</td>
+      <td style="max-width: 260px; font-size: 0.82rem;">${escapeHtml(m.address)}</td>
       <td><span class="badge badge-role ${isOfficer ? 'highlight' : ''}">${escapeHtml(m.role || '一般会員')}</span></td>
       <td style="text-align: center;">${banLeaderBadge}</td>
       <td><span class="badge ${feeClass}">${escapeHtml(m.fee_status || '未納')}</span></td>
-      <td>${supportText}</td>
       <td>
         <button type="button" class="btn-card-action primary" onclick="event.stopPropagation(); openEditMemberModal('${m.id}')">
           編集
