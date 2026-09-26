@@ -1424,13 +1424,10 @@ function openAddMemberModal() {
   document.getElementById('m-phone2').value = '';
   document.getElementById('m-email').value = '';
   document.getElementById('m-address').value = '';
-  document.getElementById('m-household-count').value = 1;
   document.getElementById('m-role').value = '一般会員';
   document.getElementById('m-ban-leader').value = 'なし';
   document.getElementById('m-circulation').value = '紙';
-  document.getElementById('m-family').value = '';
   document.getElementById('m-fee-status').value = '未納';
-  document.getElementById('m-support').value = 'なし';
   document.getElementById('m-status').value = '現役';
   document.getElementById('m-join-date').value = formatCurrentDate();
   document.getElementById('m-notes').value = '';
@@ -1477,7 +1474,6 @@ function openEditMemberModal(memberId) {
   document.getElementById('m-phone2').value = member.phone2 || '';
   document.getElementById('m-email').value = member.email || '';
   document.getElementById('m-address').value = member.address || '';
-  document.getElementById('m-household-count').value = member.household_count || 1;
   const mRoleSelect = document.getElementById('m-role');
   if (member.role && !mRoleSelect.querySelector(`option[value="${member.role}"]`)) {
     const opt = document.createElement('option');
@@ -1488,9 +1484,7 @@ function openEditMemberModal(memberId) {
   mRoleSelect.value = member.role || (ROLE_LIST.includes('一般会員') ? '一般会員' : (ROLE_LIST[0] || '一般会員'));
   document.getElementById('m-ban-leader').value = member.ban_leader === '班長' ? '班長' : 'なし';
   document.getElementById('m-circulation').value = member.circulation || '紙';
-  document.getElementById('m-family').value = member.family_members || '';
   document.getElementById('m-fee-status').value = member.fee_status || '未納';
-  document.getElementById('m-support').value = member.support_needed || 'なし';
   document.getElementById('m-status').value = member.status || '現役';
   document.getElementById('m-join-date').value = normalizeDateToYmd(member.join_date);
   document.getElementById('m-notes').value = member.notes || '';
@@ -1534,13 +1528,13 @@ async function handleSaveMember() {
     phone2: formatPhoneNumber(document.getElementById('m-phone2').value.trim()),
     email: document.getElementById('m-email').value.trim(),
     address: address,
-    household_count: parseInt(document.getElementById('m-household-count').value, 10) || 1,
+    household_count: state.activeMember?.household_count || 1,
     role: document.getElementById('m-role').value,
     ban_leader: document.getElementById('m-ban-leader').value === '班長' ? '班長' : 'なし',
     circulation: document.getElementById('m-circulation').value || '紙',
-    family_members: document.getElementById('m-family').value.trim(),
+    family_members: state.activeMember?.family_members || '',
     fee_status: document.getElementById('m-fee-status').value,
-    support_needed: document.getElementById('m-support').value,
+    support_needed: state.activeMember?.support_needed || 'なし',
     status: document.getElementById('m-status').value,
     join_date: normalizeDateToYmd(document.getElementById('m-join-date').value),
     notes: document.getElementById('m-notes').value.trim()

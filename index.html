@@ -661,17 +661,6 @@
 
           <div class="form-grid-2">
             <div class="form-group">
-              <label class="form-label" for="m-household-count">世帯人数</label>
-              <input type="number" id="m-household-count" class="form-input" min="1" max="20" value="1">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="m-family">同居ご家族・続柄</label>
-              <input type="text" id="m-family" class="form-input" placeholder="例: 妻: 花子(45), 長男: 一郎(17)">
-            </div>
-          </div>
-
-          <div class="form-grid-2">
-            <div class="form-group">
               <label class="form-label" for="m-status">会員状態</label>
               <select id="m-status" class="form-select">
                 <option value="現役">現役</option>
@@ -680,24 +669,14 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label" for="m-support">要支援・見守り配慮</label>
-              <select id="m-support" class="form-select">
-                <option value="なし">なし</option>
-                <option value="要支援(防災)">要支援(防災)</option>
-                <option value="見守り対象(高齢)">見守り対象(高齢)</option>
-                <option value="要支援・見守り双方">要支援・見守り双方</option>
-              </select>
+              <label class="form-label" for="m-join-date">加入年月日</label>
+              <input type="date" id="m-join-date" class="form-input">
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="m-join-date">加入年月日</label>
-            <input type="date" id="m-join-date" class="form-input">
-          </div>
-
-          <div class="form-group">
             <label class="form-label" for="m-notes">備考・連絡事項</label>
-            <textarea id="m-notes" class="form-textarea" rows="3" placeholder="集金時の注意事項、避難時の留意点など"></textarea>
+            <textarea id="m-notes" class="form-textarea" rows="3" placeholder="集金時の注意事項、連絡事項など"></textarea>
           </div>
         </form>
       </div>
@@ -920,8 +899,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20260926_3"></script>
-  <script src="js/api.js?v=20260926_3"></script>
-  <script src="js/app.js?v=20260926_3"></script>
+  <script src="js/data.js?v=20260926_4"></script>
+  <script src="js/api.js?v=20260926_4"></script>
+  <script src="js/app.js?v=20260926_4"></script>
 </body>
 </html>
