@@ -917,11 +917,13 @@ function renderApplicationsList() {
             <span class="app-detail-label">電話番号掲載:</span>
             <span>${app.phone_publish === '掲載不可' ? '<span style="color: #dc2626; font-weight: 700;">⛔ 回覧板への掲載不可</span>' : '<span style="color: #16a34a; font-weight: 600;">掲載可</span>'}</span>
           </div>
-          <div class="app-detail-item">
-            <span class="app-detail-label">希望の班:</span>
-            <span style="color: var(--primary); font-weight: 600;">${escapeHtml(app.preferred_ban || '未指定')}</span>
-          </div>
-          ${app.household_count > 1 || app.family_members ? `
+          ${app.preferred_ban ? `
+            <div class="app-detail-item">
+              <span class="app-detail-label">希望の班:</span>
+              <span style="color: var(--primary); font-weight: 600;">${escapeHtml(app.preferred_ban)}</span>
+            </div>
+          ` : ''}
+          ${(app.household_count > 1 || app.family_members) ? `
             <div class="app-detail-item">
               <span class="app-detail-label">家族構成:</span>
               <span>${app.household_count || 1}名（${escapeHtml(app.family_members || '単身')}）</span>

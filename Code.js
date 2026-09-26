@@ -89,9 +89,7 @@ var FORM_HEADERS = [
   "電話番号",
   "メールアドレス",
   "住所",
-  "希望班・近隣情報",
-  "世帯人数",
-  "家族構成",
+  "回覧方法",
   "ステータス",
   "処理日時",
   "備考"
@@ -198,9 +196,20 @@ function getFormSheet() {
     }
   }
 
-  // 2. 指定名称「入会申込_フォーム連携」があればそれを返す
+  // 2. 指定名称「入会申込_フォーム連携」があればそれを返す（旧ヘッダーの場合は新FORM_HEADERSに合わせて最新化）
   var sheet = ss.getSheetByName(FORM_SHEET_NAME);
-  if (sheet) return sheet;
+  if (sheet) {
+    var maxCol = sheet.getLastColumn();
+    if (maxCol > 0) {
+      var curHeaders = sheet.getRange(1, 1, 1, maxCol).getValues()[0].map(function(h) { return String(h || '').trim(); });
+      // 「希望班・近隣情報」等が含まれている旧定義の場合はヘッダー行を新定義で上書き更新
+      if (curHeaders.indexOf("希望班・近隣情報") !== -1 || curHeaders.indexOf("世帯人数") !== -1) {
+        sheet.getRange(1, 1, 1, FORM_HEADERS.length).setValues([FORM_HEADERS]);
+        sheet.getRange(1, 1, 1, FORM_HEADERS.length).setFontWeight("bold").setBackground("#059669").setFontColor("#ffffff");
+      }
+    }
+    return sheet;
+  }
 
   // 3. なければ新規作成
   sheet = ss.insertSheet(FORM_SHEET_NAME);
