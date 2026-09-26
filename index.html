@@ -722,11 +722,53 @@
 
         <div class="form-grid-2">
           <div class="form-group">
+            <label class="form-label" for="approve-name">氏名（世帯主） <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="approve-name" class="form-input" required placeholder="例: 山田 太郎">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-kana">フリガナ</label>
+            <input type="text" id="approve-kana" class="form-input" placeholder="例: ヤマダ タロウ">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="approve-phone">電話番号1（主） <span style="color: var(--danger);">*</span></label>
+            <input type="tel" id="approve-phone" class="form-input" required placeholder="例: 090-1234-5678">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-phone2">電話番号2（自宅・予備等）</label>
+            <input type="tel" id="approve-phone2" class="form-input" placeholder="例: 03-1234-5678 または 携帯">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="approve-email">メールアドレス</label>
+          <input type="email" id="approve-email" class="form-input" placeholder="例: sample@example.com">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="approve-address">住所（番地・建物名・部屋番号） <span style="color: var(--danger);">*</span></label>
+          <input type="text" id="approve-address" class="form-input" required placeholder="例: 1丁目12-3 パークハイツ101">
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="approve-circulation">回覧方法 <span style="color: var(--danger);">*</span></label>
+            <select id="approve-circulation" class="form-select" required>
+              <option value="紙">紙（紙の回覧板）</option>
+              <option value="LINE">LINE（LINE配信）</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label class="form-label" for="approve-role">初期役員</label>
             <select id="approve-role" class="form-select">
               <!-- JSで動的生成 -->
             </select>
           </div>
+        </div>
+
+        <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="approve-ban-leader">班長</label>
             <select id="approve-ban-leader" class="form-select">
@@ -734,29 +776,34 @@
               <option value="班長">班長</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label" for="approve-fee">初年度会費状況</label>
+            <select id="approve-fee" class="form-select">
+              <option value="納入済">納入済</option>
+              <option value="未納">未納</option>
+              <option value="免除">免除</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="approve-fee">初年度会費状況</label>
-            <select id="approve-fee" class="form-select">
-              <option value="未納">未納</option>
-              <option value="納入済">納入済</option>
-              <option value="免除">免除</option>
+            <label class="form-label" for="approve-status">会員状態</label>
+            <select id="approve-status" class="form-select">
+              <option value="現役">現役</option>
+              <option value="休会">休会</option>
+              <option value="転出退会">転出退会</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="approve-circulation">回覧方法 <span style="color: var(--danger);">*</span></label>
-            <select id="approve-circulation" class="form-select">
-              <option value="LINE">LINE（LINE配信）</option>
-              <option value="紙">紙（紙の回覧板）</option>
-            </select>
+            <label class="form-label" for="approve-join-date">加入年月日</label>
+            <input type="date" id="approve-join-date" class="form-input">
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="approve-notes">名簿用備考</label>
-          <input type="text" id="approve-notes" class="form-input" placeholder="Googleフォームより入会">
+          <label class="form-label" for="approve-notes">備考・連絡事項</label>
+          <textarea id="approve-notes" class="form-textarea" rows="2" placeholder="Googleフォームより入会"></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -899,8 +946,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20260926_4"></script>
-  <script src="js/api.js?v=20260926_4"></script>
-  <script src="js/app.js?v=20260926_4"></script>
+  <script src="js/data.js?v=20260926_5"></script>
+  <script src="js/api.js?v=20260926_5"></script>
+  <script src="js/app.js?v=20260926_5"></script>
 </body>
 </html>

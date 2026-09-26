@@ -1595,6 +1595,7 @@ function openApproveAppModal(appId) {
   document.getElementById('approve-app-id').value = app.id;
   document.getElementById('approve-applicant-name').textContent = app.name;
   document.getElementById('approve-applicant-address').textContent = `住所: ${app.address}`;
+  document.getElementById('approve-applicant-phone').textContent = `電話: ${app.phone}`;
   // 希望・備考情報のプレビュー表示
   const previewPreferred = document.getElementById('approve-applicant-preferred');
   if (previewPreferred) {
@@ -1610,18 +1611,55 @@ function openApproveAppModal(appId) {
   const nextId = getNextMemberId(state.members);
   document.getElementById('approve-new-id').value = nextId;
 
-  // 希望班の推測
+  // 各入力欄の初期値セット
   const banSelect = document.getElementById('approve-ban');
   if (app.preferred_ban && banSelect) {
     const matchedBan = BAN_LIST.find(b => app.preferred_ban.includes(b));
     if (matchedBan) banSelect.value = matchedBan;
+  } else if (banSelect && BAN_LIST.length > 0) {
+    banSelect.value = BAN_LIST[0];
   }
+
+  const nameInput = document.getElementById('approve-name');
+  if (nameInput) nameInput.value = app.name || '';
+
+  const kanaInput = document.getElementById('approve-kana');
+  if (kanaInput) kanaInput.value = app.kana || '';
+
+  const phoneInput = document.getElementById('approve-phone');
+  if (phoneInput) phoneInput.value = app.phone || '';
+
+  const phone2Input = document.getElementById('approve-phone2');
+  if (phone2Input) phone2Input.value = app.phone2 || '';
+
+  const emailInput = document.getElementById('approve-email');
+  if (emailInput) emailInput.value = app.email || '';
+
+  const addressInput = document.getElementById('approve-address');
+  if (addressInput) addressInput.value = app.address || '';
 
   // 希望回覧方法を初期セット
   const circSelect = document.getElementById('approve-circulation');
   if (circSelect) {
     circSelect.value = (app.circulation === 'LINE') ? 'LINE' : '紙';
   }
+
+  const roleSelect = document.getElementById('approve-role');
+  if (roleSelect) {
+    roleSelect.value = ROLE_LIST.includes('一般会員') ? '一般会員' : (ROLE_LIST[0] || '一般会員');
+  }
+
+  const banLeaderSelect = document.getElementById('approve-ban-leader');
+  if (banLeaderSelect) banLeaderSelect.value = 'なし';
+
+  const feeSelect = document.getElementById('approve-fee');
+  if (feeSelect) feeSelect.value = '未納';
+
+  const statusSelect = document.getElementById('approve-status');
+  if (statusSelect) statusSelect.value = '現役';
+
+  const joinDateInput = document.getElementById('approve-join-date');
+  if (joinDateInput) joinDateInput.value = formatCurrentDate();
 
   // 名簿用備考欄の初期値をセット（入会希望年月や電話番号掲載不可などを統合）
   const notesInput = document.getElementById('approve-notes');
@@ -1644,37 +1682,51 @@ async function handleConfirmApprove() {
   const app = state.activeApp;
   const newMemberId = document.getElementById('approve-new-id').value;
   const assignedBan = document.getElementById('approve-ban').value;
+  const name = (document.getElementById('approve-name')?.value || app.name).trim();
+  const kana = (document.getElementById('approve-kana')?.value || app.kana || '').trim();
+  const phone = (document.getElementById('approve-phone')?.value || app.phone || '').trim();
+  const phone2 = (document.getElementById('approve-phone2')?.value || '').trim();
+  const email = (document.getElementById('approve-email')?.value || app.email || '').trim();
+  const address = (document.getElementById('approve-address')?.value || app.address || '').trim();
+
+  if (!name || !phone || !address) {
+    alert('氏名、電話番号1、住所は必須項目です。');
+    return;
+  }
+
   const initialRole = document.getElementById('approve-role').value;
   const initialBanLeader = (document.getElementById('approve-ban-leader') && document.getElementById('approve-ban-leader').value === '班長') ? '班長' : 'なし';
   const initialFee = document.getElementById('approve-fee').value;
   const initialCirculation = document.getElementById('approve-circulation').value || 'LINE';
+  const initialStatus = document.getElementById('approve-status')?.value || '現役';
+  const initialJoinDate = normalizeDateToYmd(document.getElementById('approve-join-date')?.value) || formatCurrentDate();
   const notes = document.getElementById('approve-notes').value.trim() || `Googleフォーム(${app.id})より入会`;
 
   const newMember = {
     id: newMemberId,
     ban: assignedBan,
-    name: app.name,
-    kana: app.kana || '',
-    phone: formatPhoneNumber(app.phone),
-    phone2: formatPhoneNumber(app.phone2 || ''),
-    email: app.email || '',
-    address: app.address,
-    household_count: app.household_count || 1,
-    family_members: app.family_members || '',
+    name: name,
+    kana: kana,
+    phone: formatPhoneNumber(phone),
+    phone2: formatPhoneNumber(phone2),
+    email: email,
+    address: address,
+    household_count: 1,
+    family_members: '',
     role: initialRole,
     ban_leader: initialBanLeader,
     fee_status: initialFee,
     circulation: initialCirculation,
     support_needed: 'なし',
-    join_date: formatCurrentDate(),
-    status: '現役',
+    join_date: initialJoinDate,
+    status: initialStatus,
     notes: notes,
     updated_at: formatCurrentDateTime()
   };
 
   closeApproveModal();
   playTone('success');
-  showToast(`🎉 ${app.name}様の入会を承認し、${assignedBan} (${newMemberId}) に登録しました！`, '✅');
+  showToast(`🎉 ${name}様の入会を承認し、${assignedBan} (${newMemberId}) に登録しました！`, '✅');
 
   // ローカルステータス更新
   app.status = '承認済';
