@@ -903,17 +903,33 @@ function renderApplicationsList() {
             <span class="app-detail-label">連絡先:</span>
             <span>📞 ${escapeHtml(app.phone)} ${app.email ? `| ✉️ ${escapeHtml(app.email)}` : ''}</span>
           </div>
+          ${app.join_hope ? `
+            <div class="app-detail-item">
+              <span class="app-detail-label">入会希望:</span>
+              <span style="color: #0284c7; font-weight: 700;">📅 ${escapeHtml(app.join_hope)}</span>
+            </div>
+          ` : ''}
+          <div class="app-detail-item">
+            <span class="app-detail-label">希望回覧方法:</span>
+            <span style="font-weight: 600;">${app.circulation === 'LINE' ? '📱 LINE通知希望' : '📄 紙の回覧希望'}</span>
+          </div>
+          <div class="app-detail-item">
+            <span class="app-detail-label">電話番号掲載:</span>
+            <span>${app.phone_publish === '掲載不可' ? '<span style="color: #dc2626; font-weight: 700;">⛔ 回覧板への掲載不可</span>' : '<span style="color: #16a34a; font-weight: 600;">掲載可</span>'}</span>
+          </div>
           <div class="app-detail-item">
             <span class="app-detail-label">希望の班:</span>
             <span style="color: var(--primary); font-weight: 600;">${escapeHtml(app.preferred_ban || '未指定')}</span>
           </div>
-          <div class="app-detail-item">
-            <span class="app-detail-label">家族構成:</span>
-            <span>${app.household_count || 1}名（${escapeHtml(app.family_members || '単身')}）</span>
-          </div>
+          ${app.household_count > 1 || app.family_members ? `
+            <div class="app-detail-item">
+              <span class="app-detail-label">家族構成:</span>
+              <span>${app.household_count || 1}名（${escapeHtml(app.family_members || '単身')}）</span>
+            </div>
+          ` : ''}
           ${app.notes ? `
             <div class="app-detail-item" style="grid-column: 1 / -1;">
-              <span class="app-detail-label">申請者備考:</span>
+              <span class="app-detail-label">備考:</span>
               <span style="color: #475569;">${escapeHtml(app.notes)}</span>
             </div>
           ` : ''}
@@ -1597,8 +1613,16 @@ function openApproveAppModal(appId) {
   document.getElementById('approve-app-id').value = app.id;
   document.getElementById('approve-applicant-name').textContent = app.name;
   document.getElementById('approve-applicant-address').textContent = `住所: ${app.address}`;
-  document.getElementById('approve-applicant-phone').textContent = `電話: ${app.phone}`;
-  document.getElementById('approve-applicant-preferred').textContent = `希望・近隣情報: ${app.preferred_ban || '指定なし'}`;
+  // 希望・備考情報のプレビュー表示
+  const previewPreferred = document.getElementById('approve-applicant-preferred');
+  if (previewPreferred) {
+    const details = [];
+    if (app.join_hope) details.push(`📅 入会希望: ${app.join_hope}`);
+    if (app.circulation) details.push(`回覧方法: ${app.circulation === 'LINE' ? 'LINE配信' : '紙の回覧板'}`);
+    if (app.phone_publish === '掲載不可') details.push('⚠️ 電話番号掲載: 不可');
+    if (app.preferred_ban) details.push(`希望班: ${app.preferred_ban}`);
+    previewPreferred.innerHTML = details.length > 0 ? details.join('<br>') : '特記事項なし';
+  }
 
   // 次の会員IDを生成
   const nextId = getNextMemberId(state.members);
@@ -1606,9 +1630,21 @@ function openApproveAppModal(appId) {
 
   // 希望班の推測
   const banSelect = document.getElementById('approve-ban');
-  if (app.preferred_ban) {
+  if (app.preferred_ban && banSelect) {
     const matchedBan = BAN_LIST.find(b => app.preferred_ban.includes(b));
     if (matchedBan) banSelect.value = matchedBan;
+  }
+
+  // 希望回覧方法を初期セット
+  const circSelect = document.getElementById('approve-circulation');
+  if (circSelect) {
+    circSelect.value = (app.circulation === 'LINE') ? 'LINE' : '紙';
+  }
+
+  // 名簿用備考欄の初期値をセット（入会希望年月や電話番号掲載不可などを統合）
+  const notesInput = document.getElementById('approve-notes');
+  if (notesInput) {
+    notesInput.value = app.notes || (app.join_hope ? `${app.join_hope} Googleフォームより入会` : `Googleフォーム(${app.id})より入会`);
   }
 
   document.getElementById('modal-approve').classList.add('active');

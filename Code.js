@@ -184,17 +184,29 @@ function getMasterSheet() {
 }
 
 /**
- * 入会申込連携シートを取得（存在しない場合は初期作成）
+ * 入会申込連携シートを取得（Googleフォームが自動作成する「フォームの回答 1」等のシートを自動検出、なければデフォルトシートを作成）
  */
 function getFormSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(FORM_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(FORM_SHEET_NAME);
-    sheet.getRange(1, 1, 1, FORM_HEADERS.length).setValues([FORM_HEADERS]);
-    sheet.getRange(1, 1, 1, FORM_HEADERS.length).setFontWeight("bold").setBackground("#059669").setFontColor("#ffffff");
-    sheet.setFrozenRows(1);
+  
+  // 1. Googleフォーム標準の回答シート（「フォームの回答 1」「フォームの回答」等）を優先探索
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName();
+    if (sName.indexOf("フォームの回答") !== -1) {
+      return sheets[i];
+    }
   }
+
+  // 2. 指定名称「入会申込_フォーム連携」があればそれを返す
+  var sheet = ss.getSheetByName(FORM_SHEET_NAME);
+  if (sheet) return sheet;
+
+  // 3. なければ新規作成
+  sheet = ss.insertSheet(FORM_SHEET_NAME);
+  sheet.getRange(1, 1, 1, FORM_HEADERS.length).setValues([FORM_HEADERS]);
+  sheet.getRange(1, 1, 1, FORM_HEADERS.length).setFontWeight("bold").setBackground("#059669").setFontColor("#ffffff");
+  sheet.setFrozenRows(1);
   return sheet;
 }
 
@@ -605,36 +617,140 @@ function fetchMembers() {
 }
 
 /**
- * 入会申請一覧取得
+ * 入会申請一覧取得（Googleフォームの可変ヘッダー・項目順に対応）
  */
 function fetchApplications() {
   var sheet = getFormSheet();
   var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
+  var lastCol = sheet.getLastColumn();
+  if (lastRow <= 1 || lastCol <= 0) return [];
   
-  var values = sheet.getRange(2, 1, lastRow - 1, FORM_HEADERS.length).getValues();
+  var hMap = getHeaderMap(sheet);
+  var values = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var dispValues = sheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
   var applications = [];
-  
+
+  // ヘッダー名から柔軟に列インデックス（0-based）を逆引きするヘルパー
+  function findColIndex(candidates) {
+    for (var k in hMap) {
+      var normK = k.replace(/[\s\(\)（）]/g, '');
+      for (var c = 0; c < candidates.length; c++) {
+        var cand = candidates[c].replace(/[\s\(\)（）]/g, '');
+        if (normK.indexOf(cand) !== -1) {
+          return hMap[k];
+        }
+      }
+    }
+    return undefined;
+  }
+
+  var cTimestamp = findColIndex(['タイムスタンプ', '日時']);
+  var cAppId = findColIndex(['申請ID']);
+  var cEmail = findColIndex(['メールアドレス', 'メール']);
+  var cName = findColIndex(['氏名']);
+  var cKana = findColIndex(['フリガナ', 'ふりがな']);
+  var cAddress = findColIndex(['住所']);
+  var cPhone = findColIndex(['電話番号']);
+  var cYear = findColIndex(['入会希望年', '希望年']);
+  var cMonth = findColIndex(['入会希望月', '希望月']);
+  var cCircPhone = findColIndex(['回覧板への電話番号の掲載', '電話番号の掲載', '掲載可']);
+  var cCircMethod = findColIndex(['回覧板の受け取り方法', '受け取り方法', 'LINE']);
+  var cPreferredBan = findColIndex(['希望班', '近隣情報']);
+  var cHousehold = findColIndex(['世帯人数']);
+  var cFamily = findColIndex(['家族構成', '同居家族']);
+  var cStatus = findColIndex(['ステータス', '状態']);
+  var cProcessedAt = findColIndex(['処理日時']);
+  var cNotes = findColIndex(['備考']);
+
+  // デフォルト位置のフォールバック（旧固定フォーマット互換）
+  if (cTimestamp === undefined && lastCol >= 1) cTimestamp = 0;
+  if (cAppId === undefined && lastCol >= 2 && String(sheet.getRange(1, 2).getValue()).trim() === '申請ID') cAppId = 1;
+
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    var appId = String(row[1] || '').trim();
-    if (!appId && !row[0]) continue;
-    
+    var dispRow = dispValues[i];
+
+    function getV(idx) {
+      return (idx !== undefined && row[idx] !== undefined) ? row[idx] : '';
+    }
+    function getDV(idx) {
+      return (idx !== undefined && dispRow[idx] !== undefined) ? dispRow[idx] : '';
+    }
+
+    var timestampVal = getV(cTimestamp);
+    var rawAppId = String(getV(cAppId) || '').trim();
+    var nameVal = String(getV(cName) || '').trim();
+
+    // タイムスタンプも氏名も空行ならスキップ
+    if (!timestampVal && !rawAppId && !nameVal) continue;
+
+    var appId = rawAppId || ('FORM-' + (i + 1));
+    var phoneVal = formatPhone(getDV(cPhone) || getV(cPhone));
+
+    // 入会希望（年）・入会希望（月）の結合ロジック
+    // 例: 2026 または 2026年、4 または 4月
+    var rawYear = String(getV(cYear) || '').trim();
+    var rawMonth = String(getV(cMonth) || '').trim();
+    var joinHopeStr = '';
+
+    if (rawYear) {
+      var yDigits = rawYear.replace(/[^0-9]/g, '');
+      var yStr = yDigits ? (yDigits + '年') : rawYear;
+      joinHopeStr = yStr;
+    }
+    if (rawMonth) {
+      var mDigits = rawMonth.replace(/[^0-9]/g, '');
+      var mStr = mDigits ? (mDigits + '月') : rawMonth;
+      joinHopeStr = joinHopeStr ? (joinHopeStr + mStr) : mStr;
+    }
+    if (joinHopeStr) {
+      joinHopeStr += '入会希望';
+    }
+
+    // 回覧板への電話番号掲載（1.掲載可、2.掲載不可）
+    var rawCircPhone = String(getV(cCircPhone) || '').trim();
+    var phonePublish = '掲載可';
+    if (rawCircPhone.indexOf('不可') !== -1 || rawCircPhone.indexOf('2') !== -1) {
+      phonePublish = '掲載不可';
+    }
+
+    // 回覧板受け取り方法（LINE / 紙）
+    var rawCircMethod = String(getV(cCircMethod) || '').trim();
+    var circMethod = '紙';
+    if (rawCircMethod.indexOf('LINE') !== -1 || rawCircMethod.indexOf('ライン') !== -1 || rawCircMethod.indexOf('1') !== -1) {
+      circMethod = 'LINE';
+    }
+
+    // 備考欄の自動統合
+    var noteParts = [];
+    if (joinHopeStr) noteParts.push(joinHopeStr);
+    if (phonePublish === '掲載不可') noteParts.push('回覧板への電話番号掲載: 不可');
+    var rawNotes = String(getV(cNotes) || '').trim();
+    if (rawNotes) noteParts.push(rawNotes);
+
+    var finalNotes = noteParts.join(' / ');
+
+    var statusVal = String(getV(cStatus) || '未処理').trim();
+    if (!statusVal) statusVal = '未処理';
+
     applications.push({
       rowIndex: i + 2,
-      timestamp: formatDateValue(row[0]),
-      id: appId || ('FORM-' + (i + 1)),
-      name: String(row[2] || ''),
-      kana: String(row[3] || ''),
-      phone: formatPhone(row[4]),
-      email: String(row[5] || ''),
-      address: String(row[6] || ''),
-      preferred_ban: String(row[7] || ''),
-      household_count: Number(row[8]) || 1,
-      family_members: String(row[9] || ''),
-      status: String(row[10] || '未処理'),
-      processed_at: formatDateValue(row[11]),
-      notes: String(row[12] || '')
+      timestamp: formatDateValue(timestampVal),
+      id: appId,
+      name: nameVal,
+      kana: String(getV(cKana) || ''),
+      phone: phoneVal,
+      email: String(getV(cEmail) || ''),
+      address: String(getV(cAddress) || ''),
+      preferred_ban: String(getV(cPreferredBan) || ''),
+      household_count: Number(getV(cHousehold)) || 1,
+      family_members: String(getV(cFamily) || ''),
+      status: statusVal,
+      processed_at: formatDateValue(getV(cProcessedAt)),
+      notes: finalNotes,
+      join_hope: joinHopeStr,
+      phone_publish: phonePublish,
+      circulation: circMethod
     });
   }
   return applications;
@@ -835,15 +951,49 @@ function approveApplication(payload) {
   // 1. 申請シートのステータスを「承認済」に更新
   var formSheet = getFormSheet();
   var lastRow = formSheet.getLastRow();
+  var lastCol = formSheet.getLastColumn();
   var found = false;
   var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss");
   
-  if (lastRow > 1) {
-    var ids = formSheet.getRange(2, 2, lastRow - 1, 1).getValues();
-    for (var i = 0; i < ids.length; i++) {
-      if (String(ids[i][0]).trim() === String(appId).trim()) {
-        formSheet.getRange(i + 2, 11).setValue('承認済'); // ステータス
-        formSheet.getRange(i + 2, 12).setValue(now);      // 処理日時
+  if (lastRow > 1 && lastCol > 0) {
+    var hMap = getHeaderMap(formSheet);
+    
+    // ステータス列と処理日時列の列インデックスを探す（なければ末尾に自動追加）
+    var statusCol = -1;
+    var processedCol = -1;
+    for (var k in hMap) {
+      if (k.indexOf('ステータス') !== -1 || k.indexOf('状態') !== -1) statusCol = hMap[k] + 1;
+      if (k.indexOf('処理日時') !== -1) processedCol = hMap[k] + 1;
+    }
+
+    if (statusCol === -1) {
+      lastCol++;
+      formSheet.getRange(1, lastCol).setValue('ステータス').setFontWeight('bold').setBackground('#059669').setFontColor('#ffffff');
+      statusCol = lastCol;
+    }
+    if (processedCol === -1) {
+      lastCol++;
+      formSheet.getRange(1, lastCol).setValue('処理日時').setFontWeight('bold').setBackground('#059669').setFontColor('#ffffff');
+      processedCol = lastCol;
+    }
+
+    // 申請ID列を探す（なければ行番号 FORM-X または氏名等で判定）
+    var idCol = -1;
+    for (var k in hMap) {
+      if (k.indexOf('申請ID') !== -1) idCol = hMap[k] + 1;
+    }
+
+    // 全行走査
+    var rowCount = lastRow - 1;
+    var allRows = formSheet.getRange(2, 1, rowCount, Math.max(statusCol, processedCol, idCol, 3)).getValues();
+
+    for (var i = 0; i < rowCount; i++) {
+      var rowAppId = idCol > 0 ? String(allRows[i][idCol - 1] || '').trim() : '';
+      var fallbackId = 'FORM-' + (i + 1);
+
+      if ((rowAppId && rowAppId === appId) || fallbackId === appId) {
+        formSheet.getRange(i + 2, statusCol).setValue('承認済');
+        formSheet.getRange(i + 2, processedCol).setValue(now);
         found = true;
         break;
       }
@@ -866,17 +1016,49 @@ function approveApplication(payload) {
 function rejectApplication(appId, reason) {
   var formSheet = getFormSheet();
   var lastRow = formSheet.getLastRow();
-  if (lastRow <= 1) return { success: false, error: '申請データがありません' };
+  var lastCol = formSheet.getLastColumn();
+  if (lastRow <= 1 || lastCol <= 0) return { success: false, error: '申請データがありません' };
   
-  var ids = formSheet.getRange(2, 2, lastRow - 1, 1).getValues();
   var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss");
+  var hMap = getHeaderMap(formSheet);
   
-  for (var i = 0; i < ids.length; i++) {
-    if (String(ids[i][0]).trim() === String(appId).trim()) {
-      formSheet.getRange(i + 2, 11).setValue('却下');
-      formSheet.getRange(i + 2, 12).setValue(now);
-      if (reason) {
-        formSheet.getRange(i + 2, 13).setValue(reason);
+  var statusCol = -1;
+  var processedCol = -1;
+  var notesCol = -1;
+  for (var k in hMap) {
+    if (k.indexOf('ステータス') !== -1 || k.indexOf('状態') !== -1) statusCol = hMap[k] + 1;
+    if (k.indexOf('処理日時') !== -1) processedCol = hMap[k] + 1;
+    if (k.indexOf('備考') !== -1) notesCol = hMap[k] + 1;
+  }
+
+  if (statusCol === -1) {
+    lastCol++;
+    formSheet.getRange(1, lastCol).setValue('ステータス').setFontWeight('bold').setBackground('#059669').setFontColor('#ffffff');
+    statusCol = lastCol;
+  }
+  if (processedCol === -1) {
+    lastCol++;
+    formSheet.getRange(1, lastCol).setValue('処理日時').setFontWeight('bold').setBackground('#059669').setFontColor('#ffffff');
+    processedCol = lastCol;
+  }
+
+  var idCol = -1;
+  for (var k in hMap) {
+    if (k.indexOf('申請ID') !== -1) idCol = hMap[k] + 1;
+  }
+
+  var rowCount = lastRow - 1;
+  var allRows = formSheet.getRange(2, 1, rowCount, Math.max(statusCol, processedCol, idCol, 3)).getValues();
+
+  for (var i = 0; i < rowCount; i++) {
+    var rowAppId = idCol > 0 ? String(allRows[i][idCol - 1] || '').trim() : '';
+    var fallbackId = 'FORM-' + (i + 1);
+
+    if ((rowAppId && rowAppId === appId) || fallbackId === appId) {
+      formSheet.getRange(i + 2, statusCol).setValue('却下');
+      formSheet.getRange(i + 2, processedCol).setValue(now);
+      if (reason && notesCol > 0) {
+        formSheet.getRange(i + 2, notesCol).setValue(reason);
       }
       return { success: true, appId: appId, status: '却下' };
     }
