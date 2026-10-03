@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自治会員名簿管理システム スプレッドシート設定・導入マニュアル</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #eff6ff;
+      --secondary: #0284c7;
+      --accent: #10b981;
+      --accent-light: #ecfdf5;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.6;
+      padding: 24px;
+    }
+    .manual-container {
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    header.manual-header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .manual-title {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .manual-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .btn-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-print {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-print:hover {
+      background: #172554;
+    }
+    .btn-back {
+      background: #f1f5f9;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 9px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-card {
+      margin-bottom: 36px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .section-card:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .section-heading {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      background: var(--primary-light);
+      padding: 10px 14px;
+      border-radius: 6px;
+      border-left: 5px solid var(--primary);
+    }
+    .step-badge {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+    .step-list {
+      margin-left: 20px;
+      margin-bottom: 16px;
+    }
+    .step-list li {
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .table-custom {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.88rem;
+    }
+    .table-custom th, .table-custom td {
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      text-align: left;
+    }
+    .table-custom th {
+      background: #f1f5f9;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .alert-box {
+      background: var(--warning-light);
+      border: 1px solid #fde68a;
+      border-left: 4px solid var(--warning);
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin: 14px 0;
+    }
+    .alert-box strong {
+      color: #b45309;
+    }
+    .info-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--accent);
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin: 14px 0;
+    }
+    .code-box {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px;
+      border-radius: 6px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .flow-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-num {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .flow-title {
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+    .flow-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .manual-container {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .btn-actions {
+        display: none !important;
+      }
+      .section-card {
+        page-break-inside: avoid;
+        margin-bottom: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="manual-container">
+    <header class="manual-header">
+      <div>
+        <h1 class="manual-title">
+          <span>📊</span>
+          <span>自治会員名簿管理システム：スプレッドシート設定・導入マニュアル</span>
+        </h1>
+        <p class="manual-subtitle">他自治会・町内会への導入向け 初期セットアップ手順書</p>
+      </div>
+      <div class="btn-actions">
+        <a href="index.html" class="btn-back">← アプリに戻る</a>
+        <button type="button" class="btn-print" onclick="window.print()">🖨️ PDF保存・A4印刷</button>
+      </div>
+    </header>
+
+    <!-- 概要 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span>💡</span>
+        <span>システムの構成と導入の流れ</span>
+      </h2>
+      <p style="font-size: 0.95rem; margin-bottom: 14px;">
+        本システムは、<strong>共通Webアプリ（無料・サーバー契約不要）</strong> と <strong>各自治体のGoogleスプレッドシート（個別データベース）</strong> が連携して動作します。<br>
+        各自治体の住民データは自団体のスプレッドシート内にのみ保管され、他団体と混ざることはありません。
+      </p>
+
+      <div class="flow-grid">
+        <div class="flow-card">
+          <div class="flow-num">1</div>
+          <div class="flow-title">スプレッドシート作成 & スクリプト設置</div>
+          <div class="flow-desc">新規シートを作成し、指定コードを1回貼り付けて保存します</div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">2</div>
+          <div class="flow-title">自動初期化 & デプロイ</div>
+          <div class="flow-desc">関数を実行してシートを生成し、Web App連携URLを発行します</div>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">3</div>
+          <div class="flow-title">アプリ連携 & データ入力</div>
+          <div class="flow-desc">Webアプリの設定画面にURLを登録し、合言葉で利用開始します</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 1 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 1</span>
+        <span>Googleスプレッドシートの作成とスクリプト設置</span>
+      </h2>
+      <ol class="step-list">
+        <li>自治会のGoogleアカウントで <strong>Googleドライブ</strong> を開きます。</li>
+        <li>画面左上の「＋ 新規」＞「Googleスプレッドシート」をクリックして新規作成します。<br>
+            ※シート名はお好きな名前（例: <code>〇〇自治会員名簿</code>）に変更してください。</li>
+        <li>上部メニューの <strong>「拡張機能」＞「Apps Script」</strong> をクリックします。</li>
+        <li>エディタ内に最初からあるコードをすべて削除し、指定の <code>Code.js</code> を最初から最後まで丸ごと貼り付けます。</li>
+        <li>エディタ上部の <strong>「フロッピーアイコン（💾 プロジェクトを保存）」</strong> をクリックします。</li>
+      </ol>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 2</span>
+        <span>初回初期化（3つのシートを自動生成）</span>
+      </h2>
+      <ol class="step-list">
+        <li>Apps Scriptエディタ上部の関数プルダウンから <strong><code>initSheets</code></strong> を選択し、<strong>「実行（▶）」</strong> ボタンをクリックします。</li>
+        <li>初回のみ「承認が必要です」の警告が表示されます：
+          <ul style="margin: 8px 0 8px 20px;">
+            <li>「権限を確認」をクリック ➜ Googleアカウントを選択</li>
+            <li>「詳細」をクリック ➜ 「〇〇（安全ではないページ）に移動」をクリック</li>
+            <li>アクセス許可画面で「許可」をクリック</li>
+          </ul>
+        </li>
+        <li>スプレッドシートに戻ると、以下の3シートが自動生成されます：
+          <ul style="margin: 8px 0 8px 20px;">
+            <li>📘 <strong>「会員名簿」</strong>: 会員データが保存されるメインシート</li>
+            <li>📗 <strong>「入会申込_フォーム連携」</strong>: Googleフォーム連携用シート</li>
+            <li>⚙️ <strong>「システム設定」</strong>: 自治会名、合言葉、班編成マスタシート</li>
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 3</span>
+        <span>ウェブアプリとしてデプロイ（連携URLの発行）</span>
+      </h2>
+      <ol class="step-list">
+        <li>Apps Scriptエディタ右上の青い <strong>「デプロイ」＞「新しいデプロイ」</strong> をクリックします。</li>
+        <li>左側の歯車アイコンをクリックし、<strong>「ウェブアプリ」</strong> を選択します。</li>
+        <li>以下のように設定します：
+          <table class="table-custom" style="max-width: 600px; margin: 10px 0;">
+            <tr>
+              <th style="width: 35%;">設定項目</th>
+              <th>設定値</th>
+            </tr>
+            <tr>
+              <td>説明</td>
+              <td><code>自治会名簿API v1</code>（任意）</td>
+            </tr>
+            <tr>
+              <td>次のユーザーとして実行</td>
+              <td><strong>自分</strong></td>
+            </tr>
+            <tr>
+              <td>アクセスできるユーザー</td>
+              <td><strong>全員</strong>（※誰でも）</td>
+            </tr>
+          </table>
+          <div class="alert-box">
+            <strong>⚠️ なぜ「全員」にするのか？</strong><br>
+            役員個人のスマホやログインなしの端末から通信するため「全員」を選びます。名簿の閲覧・編集はすべてシステム独自の「合言葉（パスコード）」で暗号照合するため、第三者に情報が見られる心配はありません。
+          </div>
+        </li>
+        <li>「デプロイ」ボタンを押し、表示された <strong>「ウェブアプリのURL（末尾が /exec）」</strong> をコピーします。</li>
+      </ol>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 4</span>
+        <span>自治会ごとの個別設定（「システム設定」シート）</span>
+      </h2>
+      <p style="font-size: 0.95rem; margin-bottom: 12px;">自動生成された「システム設定」シートで、自治会の運用に合わせて合言葉等を決めます：</p>
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>設定キー</th>
+            <th>設定値（B列）の例</th>
+            <th>内容・使い方</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>communityName</code></td>
+            <td>緑が丘自治会</td>
+            <td>自治会・町内会名（アプリ上部に表示）</td>
+          </tr>
+          <tr>
+            <td><code>passcode</code></td>
+            <td>roster2026</td>
+            <td><strong>役員用合言葉</strong>（一般役員・班長の閲覧、集金チェック、印刷用）</td>
+          </tr>
+          <tr>
+            <td><code>adminPasscode</code></td>
+            <td>admin2026</td>
+            <td><strong>管理者用合言葉</strong>（名簿編集・削除・設定変更用）</td>
+          </tr>
+          <tr>
+            <td><code>blocks</code> / <code>roles</code></td>
+            <td>JSON形式</td>
+            <td>班編成や役職一覧（※Webアプリの「設定」画面から画面操作でも変更可能）</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info-box">
+        💡 <strong>毎年の役員交代時の運用:</strong><br>
+        4月の役員交代時には、この合言葉を新年度のものに変えるだけで、旧役員の端末からのアクセスが一括遮断されます。
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 5</span>
+        <span>Webアプリへの接続と動作確認</span>
+      </h2>
+      <ol class="step-list">
+        <li>Webアプリ（<a href="https://jack91709991-stack.github.io/community-roster/" target="_blank">https://jack91709991-stack.github.io/community-roster/</a>）を開きます。</li>
+        <li>右上の <strong>「⚙️ 設定」</strong> タブを開き、右上の合言葉で「管理者合言葉」を入力してログインします（👑 アイコン表示）。</li>
+        <li>「Google Apps Script Web App URL」に STEP 3 でコピーしたURLを貼り付け、<strong>「保存して接続テスト」</strong> をクリックします。</li>
+        <li>右上のステータスが <strong>「🟢 接続中」</strong> になれば接続完了です！</li>
+      </ol>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 6</span>
+        <span>「会員名簿」シートへのデータ登録ルール</span>
+      </h2>
+      <p style="font-size: 0.95rem; margin-bottom: 12px;">既存の名簿データがある場合は、「会員名簿」シートの各列に合わせて入力します：</p>
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>列</th>
+            <th>列名</th>
+            <th>入力例</th>
+            <th>必須</th>
+            <th>注意事項</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td>会員ID</td>
+            <td>M001, 01-01</td>
+            <td>必須</td>
+            <td>重複しない一意の番号</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td>班</td>
+            <td>1班, 2班</td>
+            <td>必須</td>
+            <td>設定の班名と一致させる</td>
+          </tr>
+          <tr>
+            <td>C</td>
+            <td>氏名</td>
+            <td>山田 太郎</td>
+            <td>必須</td>
+            <td>世帯主氏名</td>
+          </tr>
+          <tr>
+            <td>D</td>
+            <td>フリガナ</td>
+            <td>ヤマダ タロウ</td>
+            <td>任意</td>
+            <td>カタカナ推奨</td>
+          </tr>
+          <tr>
+            <td>E</td>
+            <td>電話番号</td>
+            <td>090-1234-5678</td>
+            <td>任意</td>
+            <td>※書式を「書式なしテキスト」に設定</td>
+          </tr>
+          <tr>
+            <td>F</td>
+            <td>電話番号2</td>
+            <td>03-1234-5678</td>
+            <td>任意</td>
+            <td>固定電話・家族携帯等</td>
+          </tr>
+          <tr>
+            <td>G</td>
+            <td>メールアドレス</td>
+            <td>taro@example.com</td>
+            <td>任意</td>
+            <td>連絡用メール</td>
+          </tr>
+          <tr>
+            <td>H</td>
+            <td>住所</td>
+            <td>緑が丘1-2-3</td>
+            <td>必須</td>
+            <td>番地・部屋番号</td>
+          </tr>
+          <tr>
+            <td>I</td>
+            <td>役員</td>
+            <td>一般会員, 会長</td>
+            <td>必須</td>
+            <td>初期値「一般会員」</td>
+          </tr>
+          <tr>
+            <td>J</td>
+            <td>班長</td>
+            <td>班長, なし</td>
+            <td>必須</td>
+            <td>当年度担当は「班長」</td>
+          </tr>
+          <tr>
+            <td>K</td>
+            <td>会費状況</td>
+            <td>納入済, 未納</td>
+            <td>必須</td>
+            <td>初期値「未納」</td>
+          </tr>
+          <tr>
+            <td>L</td>
+            <td>回覧方法</td>
+            <td>LINE, 紙</td>
+            <td>必須</td>
+            <td>初期値「紙」</td>
+          </tr>
+          <tr>
+            <td>M</td>
+            <td>加入日</td>
+            <td>2024-04-01</td>
+            <td>任意</td>
+            <td>YYYY-MM-DD形式</td>
+          </tr>
+          <tr>
+            <td>N</td>
+            <td>会員状態</td>
+            <td>現役, 休会, 転出退会</td>
+            <td>必須</td>
+            <td>通常は「現役」</td>
+          </tr>
+          <tr>
+            <td>O</td>
+            <td>備考</td>
+            <td>連絡事項など</td>
+            <td>任意</td>
+            <td>自由記述</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="section-card">
+      <h2 class="section-heading">
+        <span class="step-badge">STEP 7</span>
+        <span>Googleフォーム入会申込との連携（任意）</span>
+      </h2>
+      <ol class="step-list">
+        <li>Googleドライブで「Googleフォーム」を作成し、「氏名」「フリガナ」「住所」「電話番号」「メールアドレス」「入会希望(年)」「入会希望(月)」「回覧板への電話番号の掲載」「回覧板の受け取り方法を選択」の設問を作成します。</li>
+        <li>フォームの「回答」タブ ＞「スプレッドシートにリンク」で、本名簿スプレッドシートを指定します。</li>
+        <li>スプレッドシートに「フォームの回答 1」シートが追加されたら、ヘッダーの末尾に <strong><code>ステータス</code></strong> 列を追加します。</li>
+        <li>住民からの新規申込が届くと、Webアプリの「📝 入会申請受付」タブに自動反映され、ワンタップで班を割り当てて名簿に追加できます。</li>
+      </ol>
+    </section>
+
+    <footer style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding-top: 20px; border-top: 1px solid var(--border);">
+      自治会員名簿管理システム 配布用セットアップガイド | 発行：自治会IT推進プロジェクト
+    </footer>
+  </div>
+
+</body>
+</html>
