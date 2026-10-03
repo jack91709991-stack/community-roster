@@ -2033,6 +2033,17 @@ body {
   font-size: 10.5pt;
 }
 
+.report-table.report-table-compact {
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.report-table.report-table-compact th,
+.report-table.report-table-compact td {
+  padding: 6px 12px;
+}
+
 .report-leader-mark {
   font-weight: normal;
   color: #000000;

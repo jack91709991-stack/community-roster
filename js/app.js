@@ -1220,6 +1220,8 @@ function renderReportsTab() {
     container.innerHTML = generateBlockBanLeadersReportHtml(fiscalYear, dateStr);
   } else if (reportType === 'block_ban_circulation') {
     container.innerHTML = generateBlockBanCirculationReportHtml(fiscalYear, dateStr);
+  } else if (reportType === 'block_ban_circulation_compact') {
+    container.innerHTML = generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr);
   }
 }
 
@@ -1570,6 +1572,169 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       </tbody>
     </table>
     <div class="report-footer-note">◎がブロック長になります。</div>
+  `;
+}
+
+/**
+ * 「令和〇年度 ブロック、班別集計表（回覧確認用）（携帯用）」のHTMLを生成
+ * （氏名・電話番号を削除し、ブロック名・班名・会員数・紙回覧・LINE回覧のみのコンパクト版）
+ */
+function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
+  const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
+  const members = state.members || [];
+
+  // ブロック設定を昇順ソート
+  const sortedBlocks = [...blockConfig].sort((a, b) => {
+    return (a.name || '').localeCompare(b.name || '', 'ja', { numeric: true });
+  });
+
+  let totalBlocksCount = sortedBlocks.length;
+  let totalAllBansCount = 0;
+  let grandTotalActiveMembers = 0;
+  let grandTotalPaperMembers = 0;
+  let grandTotalLineMembers = 0;
+
+  let tableRowsHtml = '';
+
+  sortedBlocks.forEach(block => {
+    const rawBans = block.bans || [];
+    // 各ブロック内の班を昇順ソート
+    const sortedBans = [...rawBans].sort((a, b) => {
+      return (a || '').localeCompare(b || '', 'ja', { numeric: true });
+    });
+
+    const banCountInBlock = sortedBans.length;
+
+    // 会員数（現役）が1名以上の班の数をカウント（0の班は除外）
+    const activeBansCountInBlock = sortedBans.filter(bName => {
+      return members.some(m => m.ban === bName && m.status === '現役');
+    }).length;
+    totalAllBansCount += activeBansCountInBlock;
+
+    // ブロック表示名（「ブロック」を除外）
+    const blockDisplayName = (block.name || '').replace(/ブロック$/, '').trim();
+
+    // rowspan = 班の数 + 小計行(1行)
+    const blockRowspan = banCountInBlock > 0 ? (banCountInBlock + 1) : 1;
+
+    let blockActiveTotal = 0;
+    let blockPaperTotal = 0;
+    let blockLineTotal = 0;
+
+    if (banCountInBlock === 0) {
+      tableRowsHtml += `
+        <tr>
+          <td class="cell-center cell-bold" rowspan="1">
+            ${escapeHtml(blockDisplayName)}<br>
+            <span style="font-size: 0.85em; font-weight: normal;">（0班）</span>
+          </td>
+          <td class="cell-center" colspan="4" style="color: #64748b;">所属する班が設定されていません</td>
+        </tr>
+      `;
+      return;
+    }
+
+    sortedBans.forEach((banName, idx) => {
+      // 班名から「班」を除外
+      const banDisplayName = (banName || '').replace(/班$/, '').trim();
+
+      // 現役会員
+      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const activeCount = banActiveMembers.length;
+      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
+
+      blockActiveTotal += activeCount;
+      blockPaperTotal += paperCount;
+      blockLineTotal += lineCount;
+
+      grandTotalActiveMembers += activeCount;
+      grandTotalPaperMembers += paperCount;
+      grandTotalLineMembers += lineCount;
+
+      // 表示制御（会員数0の場合は「欠番」）
+      let activeCountDisplay = '';
+      let paperCountDisplay = '';
+      let lineCountDisplay = '';
+
+      if (activeCount === 0) {
+        activeCountDisplay = '<span class="report-vacant-note">欠番</span>';
+        paperCountDisplay = '';
+        lineCountDisplay = '';
+      } else {
+        activeCountDisplay = String(activeCount);
+        paperCountDisplay = String(paperCount);
+        lineCountDisplay = String(lineCount);
+      }
+
+      // ブロック長判定（その班の現役会員で role === 'ブロック長' の人がいるか）
+      const hasBlockLeader = members.some(m => m.ban === banName && m.role === 'ブロック長' && m.status !== '転出退会');
+      const banLabel = hasBlockLeader
+        ? `◎${escapeHtml(banDisplayName)}`
+        : escapeHtml(banDisplayName);
+
+      tableRowsHtml += `<tr>`;
+      // 最初の行のみブロック名セルを出力（縦結合）
+      if (idx === 0) {
+        tableRowsHtml += `
+          <td class="cell-center cell-bold" rowspan="${blockRowspan}">
+            ${escapeHtml(blockDisplayName)}<br>
+            <span style="font-size: 0.85em; font-weight: normal;">（${activeBansCountInBlock}班）</span>
+          </td>
+        `;
+      }
+
+      tableRowsHtml += `
+          <td class="cell-center">${banLabel}</td>
+          <td class="cell-right">${activeCountDisplay}</td>
+          <td class="cell-right">${paperCountDisplay}</td>
+          <td class="cell-right">${lineCountDisplay}</td>
+        </tr>
+      `;
+    });
+
+    // 各ブロックの小計行
+    tableRowsHtml += `
+      <tr class="subtotal-row">
+        <td class="cell-center">計</td>
+        <td class="cell-right">${blockActiveTotal === 0 ? '' : blockActiveTotal}</td>
+        <td class="cell-right">${blockPaperTotal === 0 ? '' : blockPaperTotal}</td>
+        <td class="cell-right">${blockLineTotal === 0 ? '' : blockLineTotal}</td>
+      </tr>
+    `;
+  });
+
+  // 全ブロックの合計行（最終行）
+  tableRowsHtml += `
+    <tr class="total-row">
+      <td colspan="2" class="cell-center">${totalBlocksCount}ブロック　${totalAllBansCount}班</td>
+      <td class="cell-right">${grandTotalActiveMembers}</td>
+      <td class="cell-right">${grandTotalPaperMembers}</td>
+      <td class="cell-right">${grandTotalLineMembers}</td>
+    </tr>
+  `;
+
+  return `
+    <div class="report-header-top" style="max-width: 580px; margin: 0 auto 6px auto;">
+      <div class="report-caution">※回覧確認用（携帯用）</div>
+      <div class="report-date">${escapeHtml(dateStr)}時点</div>
+    </div>
+    <div class="report-title-main" style="max-width: 580px; margin: 0 auto 12px auto;">${escapeHtml(fiscalYear)}　ブロック、班別集計表（回覧確認用）</div>
+    <table class="report-table report-table-compact">
+      <thead>
+        <tr>
+          <th style="width: 26%;">ブロック名</th>
+          <th style="width: 14%;">班名</th>
+          <th style="width: 20%;">会員数</th>
+          <th style="width: 20%;">紙回覧</th>
+          <th style="width: 20%;">LINE回覧</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRowsHtml}
+      </tbody>
+    </table>
+    <div class="report-footer-note" style="max-width: 580px; margin: 6px auto 0 auto; text-align: center;">◎がブロック長になります。会員数は現役会員のみを集計しています。</div>
   `;
 }
 
