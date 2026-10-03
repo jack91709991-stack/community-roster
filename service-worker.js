@@ -1,4 +1,4 @@
-const CACHE_NAME = 'community-roster-v11';
+const CACHE_NAME = 'community-roster-v12';
 const ASSETS = [
   './',
   './index.html',
