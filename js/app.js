@@ -1685,7 +1685,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
       }
 
       tableRowsHtml += `
-          <td class="cell-center">${banLabel}</td>
+          <td class="cell-center" style="white-space: nowrap;">${banLabel}</td>
           <td class="cell-right">${activeCountDisplay}</td>
           <td class="cell-right">${paperCountDisplay}</td>
           <td class="cell-right">${lineCountDisplay}</td>
@@ -1696,7 +1696,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
     // 各ブロックの小計行
     tableRowsHtml += `
       <tr class="subtotal-row">
-        <td class="cell-center">計</td>
+        <td class="cell-center" style="white-space: nowrap;">計</td>
         <td class="cell-right">${blockActiveTotal === 0 ? '' : blockActiveTotal}</td>
         <td class="cell-right">${blockPaperTotal === 0 ? '' : blockPaperTotal}</td>
         <td class="cell-right">${blockLineTotal === 0 ? '' : blockLineTotal}</td>
@@ -1707,7 +1707,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
   // 全ブロックの合計行（最終行）
   tableRowsHtml += `
     <tr class="total-row">
-      <td colspan="2" class="cell-center">${totalBlocksCount}ブロック　${totalAllBansCount}班</td>
+      <td colspan="2" class="cell-center" style="white-space: nowrap;">${totalBlocksCount}ブロック　${totalAllBansCount}班</td>
       <td class="cell-right">${grandTotalActiveMembers}</td>
       <td class="cell-right">${grandTotalPaperMembers}</td>
       <td class="cell-right">${grandTotalLineMembers}</td>
@@ -1723,11 +1723,11 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
     <table class="report-table report-table-compact">
       <thead>
         <tr>
-          <th style="width: 26%;">ブロック名</th>
-          <th style="width: 14%;">班名</th>
-          <th style="width: 20%;">会員数</th>
-          <th style="width: 20%;">紙回覧</th>
-          <th style="width: 20%;">LINE回覧</th>
+          <th style="width: 18%; white-space: nowrap;">ブロック名</th>
+          <th style="width: 18%; white-space: nowrap;">班名</th>
+          <th style="width: 21%; white-space: nowrap;">会員数</th>
+          <th style="width: 21%; white-space: nowrap;">紙回覧</th>
+          <th style="width: 22%; white-space: nowrap;">LINE回覧</th>
         </tr>
       </thead>
       <tbody>
