@@ -22,6 +22,7 @@ const state = {
   },
   editingBlocks: null,
   editingRoles: null,
+  circulationConfig: typeof getCirculationConfig === 'function' ? getCirculationConfig() : {},
   activeMember: null,
   activeApp: null,
   isSheetSynced: false,
@@ -121,6 +122,10 @@ function applyBasicSettings(settings) {
     if (settings.roles && Array.isArray(settings.roles) && settings.roles.length > 0) {
       api.setLocalRoles(settings.roles);
     }
+    if (settings.circulationConfig && typeof settings.circulationConfig === 'object') {
+      api.setLocalCirculationConfig(settings.circulationConfig);
+      state.circulationConfig = settings.circulationConfig;
+    }
     state.editingBlocks = null;
     state.editingRoles = null;
     populateBlockAndBanDropdowns();
@@ -128,6 +133,7 @@ function applyBasicSettings(settings) {
     updateCommunityTitleDisplay();
     renderBlockSettings();
     renderRoleSettings();
+    renderCirculationSettings();
     console.log('[CommunityRoster] 基本設定を正常に反映しました');
   } catch (err) {
     console.error('[CommunityRoster] applyBasicSettings error:', err);
@@ -155,6 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCommunityTitleDisplay();
   renderBlockSettings();
   renderRoleSettings();
+  renderCirculationSettings();
 
   const gasUrl = api.getGasUrl();
   const passcode = api.getPasscode();
@@ -398,11 +405,17 @@ async function loadData() {
   // スプレッドシートから設定がロードされた場合、ローカルの編集バッファをリセットしUIを最新化
   state.editingBlocks = null;
   state.editingRoles = null;
+  if (result && result.settings && result.settings.circulationConfig) {
+    state.circulationConfig = result.settings.circulationConfig;
+  } else {
+    state.circulationConfig = api.getLocalCirculationConfig();
+  }
   populateBlockAndBanDropdowns();
   populateRoleDropdowns();
   updateCommunityTitleDisplay();
   renderBlockSettings();
   renderRoleSettings();
+  renderCirculationSettings();
 
   // 合言葉入力欄の反映（設定タブ）
   if (result && result.settings) {
@@ -486,6 +499,7 @@ function switchTab(targetTabId) {
   if (targetTabId === 'tab-admin') {
     renderBlockSettings();
     renderRoleSettings();
+    renderCirculationSettings();
   }
   if (targetTabId === 'tab-settings') {
     const inputGas = document.getElementById('setting-gas-url');
@@ -1458,7 +1472,10 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       // 現役会員
       const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
       const activeCount = banActiveMembers.length;
-      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const circCfg = (state.circulationConfig && state.circulationConfig[banName]) || null;
+      const paperCount = (circCfg && circCfg.paperCount !== undefined && circCfg.paperCount !== null && circCfg.paperCount !== '')
+        ? Number(circCfg.paperCount)
+        : banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
       const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
 
       blockActiveTotal += activeCount;
@@ -1641,7 +1658,10 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
       // 現役会員
       const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
       const activeCount = banActiveMembers.length;
-      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const circCfg = (state.circulationConfig && state.circulationConfig[banName]) || null;
+      const paperCount = (circCfg && circCfg.paperCount !== undefined && circCfg.paperCount !== null && circCfg.paperCount !== '')
+        ? Number(circCfg.paperCount)
+        : banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
       const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
 
       blockActiveTotal += activeCount;
@@ -2737,6 +2757,28 @@ function initEventListeners() {
     btnResetRoles.addEventListener('click', handleResetRoles);
   }
 
+  // 班別回覧配布設定: 保存
+  const btnSaveCirc = document.getElementById('btn-save-circulation-config');
+  if (btnSaveCirc) {
+    btnSaveCirc.addEventListener('click', handleSaveCirculationConfig);
+  }
+
+  // 班別回覧配布設定: 名簿から自動反映
+  const btnAutofillCirc = document.getElementById('btn-autofill-circulation-config');
+  if (btnAutofillCirc) {
+    btnAutofillCirc.addEventListener('click', handleAutofillCirculationConfig);
+  }
+
+  // 班別回覧配布設定: 入力変更時の合計自動計算
+  const circContainer = document.getElementById('circulation-settings-container');
+  if (circContainer) {
+    circContainer.addEventListener('input', (e) => {
+      if (e.target && e.target.classList.contains('circ-input')) {
+        updateCirculationTotals();
+      }
+    });
+  }
+
   // サンプルリセット
   document.getElementById('btn-reset-sample').addEventListener('click', () => {
     if (confirm('ローカルの名簿データを初期サンプルデータにリセットしますか？')) {
@@ -2974,6 +3016,236 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// =============================================================================
+// 班別 回覧配布設定 ロジック
+// =============================================================================
+
+function renderCirculationSettings() {
+  const container = document.getElementById('circulation-settings-container');
+  if (!container) return;
+
+  const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
+  const members = state.members || [];
+  const circConfig = state.circulationConfig || (typeof api.getLocalCirculationConfig === 'function' ? api.getLocalCirculationConfig() : {}) || {};
+
+  // ブロック設定を昇順ソート
+  const sortedBlocks = [...blockConfig].sort((a, b) => {
+    return (a.name || '').localeCompare(b.name || '', 'ja', { numeric: true });
+  });
+
+  if (sortedBlocks.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-muted); background: #ffffff; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+        ブロック・班が設定されていません。上の「ブロック・班の設定」でブロックと班を追加してください。
+      </div>
+    `;
+    return;
+  }
+
+  let tableRowsHtml = '';
+  let totalBans = 0;
+  let totalRosterMembers = 0;
+  let totalPaper = 0;
+  let totalNormal = 0;
+  let totalAll = 0;
+
+  sortedBlocks.forEach((block, blkIdx) => {
+    const rawBans = block.bans || [];
+    const sortedBans = [...rawBans].sort((a, b) => {
+      return (a || '').localeCompare(b || '', 'ja', { numeric: true });
+    });
+    const banCount = sortedBans.length;
+
+    if (banCount === 0) {
+      tableRowsHtml += `
+        <tr>
+          <td class="cell-center" style="font-weight: 700; background: #fafafa;">${escapeHtml(block.name || `ブロック${blkIdx + 1}`)}</td>
+          <td class="cell-center" colspan="5" style="color: var(--text-light); font-size: 0.82rem;">班が登録されていません</td>
+        </tr>
+      `;
+      return;
+    }
+
+    sortedBans.forEach((banName, bIdx) => {
+      totalBans++;
+      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const activeCount = banActiveMembers.length;
+      const calcPaper = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const calcLine = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
+
+      totalRosterMembers += activeCount;
+
+      const banCfg = circConfig[banName] || {};
+      const paperVal = (banCfg.paperCount !== undefined && banCfg.paperCount !== null)
+        ? banCfg.paperCount
+        : calcPaper;
+      const normalVal = (banCfg.normalCount !== undefined && banCfg.normalCount !== null)
+        ? banCfg.normalCount
+        : (activeCount > 0 ? 1 : 0);
+      const allVal = (banCfg.allHouseholdCount !== undefined && banCfg.allHouseholdCount !== null)
+        ? banCfg.allHouseholdCount
+        : activeCount;
+
+      totalPaper += Number(paperVal) || 0;
+      totalNormal += Number(normalVal) || 0;
+      totalAll += Number(allVal) || 0;
+
+      const blockTd = bIdx === 0
+        ? `<td class="cell-center" rowspan="${banCount}" style="font-weight: 700; background: #fafafa; border-right: 2px solid var(--border-color);">${escapeHtml(block.name || `ブロック${blkIdx + 1}`)}</td>`
+        : '';
+
+      tableRowsHtml += `
+        <tr data-ban="${escapeHtml(banName)}">
+          ${blockTd}
+          <td class="cell-center" style="font-weight: 600;">${escapeHtml(banName)}</td>
+          <td class="cell-center" style="font-size: 0.82rem; color: var(--text-color);">
+            <strong>${activeCount}</strong>世帯
+            <span style="color: var(--text-muted); font-size: 0.75rem;">(紙${calcPaper} / LINE${calcLine})</span>
+          </td>
+          <td class="cell-center">
+            <input type="number" min="0" class="circ-input" data-ban="${escapeHtml(banName)}" data-field="paperCount" value="${escapeHtml(String(paperVal))}">
+          </td>
+          <td class="cell-center">
+            <input type="number" min="0" class="circ-input" data-ban="${escapeHtml(banName)}" data-field="normalCount" value="${escapeHtml(String(normalVal))}">
+          </td>
+          <td class="cell-center">
+            <input type="number" min="0" class="circ-input" data-ban="${escapeHtml(banName)}" data-field="allHouseholdCount" value="${escapeHtml(String(allVal))}">
+          </td>
+        </tr>
+      `;
+    });
+  });
+
+  container.innerHTML = `
+    <table class="circ-settings-table">
+      <thead>
+        <tr>
+          <th style="width: 16%;">ブロック</th>
+          <th style="width: 14%;">班名</th>
+          <th style="width: 22%;">現役世帯数 (名簿参考)</th>
+          <th style="width: 16%;">① 紙での回覧希望<br><span style="font-size:0.75rem; font-weight:normal;">(部数/世帯)</span></th>
+          <th style="width: 16%;">② 通常時回覧板配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
+          <th style="width: 16%;">③ 全世帯回覧時配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRowsHtml}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td class="cell-center" colspan="2">合計 (${totalBans}班)</td>
+          <td class="cell-center" style="font-size: 0.85rem;">${totalRosterMembers}世帯</td>
+          <td class="cell-center" id="circ-total-paper" style="color: var(--primary); font-weight: 700;">${totalPaper} 部</td>
+          <td class="cell-center" id="circ-total-normal" style="color: var(--primary); font-weight: 700;">${totalNormal} 部</td>
+          <td class="cell-center" id="circ-total-all" style="color: var(--primary); font-weight: 700;">${totalAll} 部</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+function updateCirculationTotals() {
+  const container = document.getElementById('circulation-settings-container');
+  if (!container) return;
+
+  let totalPaper = 0;
+  let totalNormal = 0;
+  let totalAll = 0;
+
+  container.querySelectorAll('.circ-input[data-field="paperCount"]').forEach(inp => {
+    totalPaper += parseInt(inp.value, 10) || 0;
+  });
+  container.querySelectorAll('.circ-input[data-field="normalCount"]').forEach(inp => {
+    totalNormal += parseInt(inp.value, 10) || 0;
+  });
+  container.querySelectorAll('.circ-input[data-field="allHouseholdCount"]').forEach(inp => {
+    totalAll += parseInt(inp.value, 10) || 0;
+  });
+
+  const elPaper = document.getElementById('circ-total-paper');
+  const elNormal = document.getElementById('circ-total-normal');
+  const elAll = document.getElementById('circ-total-all');
+
+  if (elPaper) elPaper.textContent = `${totalPaper} 部`;
+  if (elNormal) elNormal.textContent = `${totalNormal} 部`;
+  if (elAll) elAll.textContent = `${totalAll} 部`;
+}
+
+function handleAutofillCirculationConfig() {
+  const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
+  const members = state.members || [];
+  const container = document.getElementById('circulation-settings-container');
+  if (!container) return;
+
+  let count = 0;
+  blockConfig.forEach(block => {
+    (block.bans || []).forEach(banName => {
+      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const activeCount = banActiveMembers.length;
+      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const normalCount = activeCount > 0 ? 1 : 0;
+      const allHouseholdCount = activeCount;
+
+      const pInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="paperCount"]`);
+      const nInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="normalCount"]`);
+      const aInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="allHouseholdCount"]`);
+
+      if (pInput) pInput.value = paperCount;
+      if (nInput) nInput.value = normalCount;
+      if (aInput) aInput.value = allHouseholdCount;
+      count++;
+    });
+  });
+
+  updateCirculationTotals();
+  playTone('toggle');
+  showToast(`名簿データから ${count} 班の数値を自動計算して入力欄に反映しました。「保存」ボタンで確定してください`, '🔄');
+}
+
+async function handleSaveCirculationConfig() {
+  if (!api.isAdmin()) {
+    alert('回覧配布設定の変更には管理者権限が必要です。');
+    return;
+  }
+  const container = document.getElementById('circulation-settings-container');
+  if (!container) return;
+
+  const inputs = container.querySelectorAll('.circ-input');
+  const newConfig = {};
+  inputs.forEach(inp => {
+    const ban = inp.getAttribute('data-ban');
+    const field = inp.getAttribute('data-field');
+    if (!ban || !field) return;
+    if (!newConfig[ban]) newConfig[ban] = {};
+    const val = inp.value.trim();
+    newConfig[ban][field] = val === '' ? 0 : parseInt(val, 10) || 0;
+  });
+
+  const btn = document.getElementById('btn-save-circulation-config');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+  }
+
+  const res = await api.saveSettings({ circulationConfig: newConfig }, (status, text) => {
+    updateSyncStatus(status, text);
+  });
+
+  state.circulationConfig = newConfig;
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '💾 回覧配布設定を保存';
+  }
+
+  playTone('success');
+  if (res && res.localOnly) {
+    showToast('班別回覧配布設定を保存しました！', '💾');
+  } else {
+    showToast('班別回覧配布設定を保存し、スプレッドシートと同期しました！', '☁️');
+  }
 }
 
 // =============================================================================

@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   LAST_SYNC: 'community_roster_last_sync',
   BLOCKS: 'community_roster_blocks',
   ROLES: 'community_roster_roles',
+  CIRCULATION_CONFIG: 'community_roster_circulation_config',
   PASSCODE: 'community_roster_passcode',
   AUTH_ROLE: 'community_roster_auth_role'
 };
@@ -135,6 +136,18 @@ const api = {
       } else {
         localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(roles));
       }
+    }
+  },
+
+  getLocalCirculationConfig() {
+    return typeof getCirculationConfig === 'function' ? getCirculationConfig() : {};
+  },
+
+  setLocalCirculationConfig(config) {
+    if (typeof saveCirculationConfig === 'function') {
+      saveCirculationConfig(config);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.CIRCULATION_CONFIG, JSON.stringify(config || {}));
     }
   },
 
@@ -308,6 +321,9 @@ const api = {
           }
           if (data.settings.communityName) {
             this.setCommunityName(data.settings.communityName);
+          }
+          if (data.settings.circulationConfig && typeof data.settings.circulationConfig === 'object') {
+            this.setLocalCirculationConfig(data.settings.circulationConfig);
           }
         }
         localStorage.setItem(STORAGE_KEYS.LAST_SYNC, formatCurrentDateTime());
@@ -555,6 +571,9 @@ const api = {
     }
     if (settingsData.communityName) {
       this.setCommunityName(settingsData.communityName);
+    }
+    if (settingsData.circulationConfig) {
+      this.setLocalCirculationConfig(settingsData.circulationConfig);
     }
 
     // 2. GASスプレッドシートへ同期

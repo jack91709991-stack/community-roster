@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
   <link rel="apple-touch-icon" href="icons/icon-192.svg">
-  <link rel="stylesheet" href="css/style.css?v=20261004_1">
+  <link rel="stylesheet" href="css/style.css?v=20261004_4">
 </head>
 <body>
 
@@ -470,6 +470,29 @@
           <button type="button" class="btn-secondary" id="btn-add-block">＋ 新しいブロックを追加</button>
           <button type="button" class="btn-primary" id="btn-save-blocks" style="margin-left: auto;">💾 ブロック・班設定を保存</button>
           <button type="button" class="btn-secondary" id="btn-reset-blocks">デフォルト編成に戻す</button>
+        </div>
+      </div>
+
+      <!-- 班別 回覧配布設定（回覧板・配布物部数） -->
+      <div class="settings-section" id="section-circulation-settings">
+        <div class="settings-section-title">📰 班別 回覧配布設定（回覧板・配布物部数）</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          各班の「紙での回覧希望（世帯数）」「通常時回覧板配布（部数）」「全世帯回覧時配布（部数）」を設定・管理できます。スプレッドシート連携時は自動保存・同期され、回覧板の仕分けや帳票印刷に活用できます。
+        </p>
+
+        <div style="overflow-x: auto; margin-bottom: 12px;">
+          <div id="circulation-settings-container">
+            <!-- JSで動的生成 -->
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center;">
+          <button type="button" class="btn-secondary" id="btn-autofill-circulation-config">
+            🔄 名簿データから自動反映
+          </button>
+          <button type="button" class="btn-primary" id="btn-save-circulation-config" style="margin-left: auto;">
+            💾 回覧配布設定を保存
+          </button>
         </div>
       </div>
 
@@ -948,8 +971,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- スクリプト群 -->
-  <script src="js/data.js?v=20261004_3"></script>
-  <script src="js/api.js?v=20261004_3"></script>
-  <script src="js/app.js?v=20261004_3"></script>
+  <script src="js/data.js?v=20261004_4"></script>
+  <script src="js/api.js?v=20261004_4"></script>
+  <script src="js/app.js?v=20261004_4"></script>
 </body>
 </html>

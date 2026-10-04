@@ -2044,6 +2044,64 @@ body {
   padding: 5px 6px;
 }
 
+/* 班別 回覧配布設定テーブル */
+.circ-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  background: #ffffff;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.circ-settings-table th,
+.circ-settings-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.circ-settings-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.circ-settings-table td.cell-center {
+  text-align: center;
+}
+
+.circ-settings-table td.cell-right {
+  text-align: right;
+}
+
+.circ-settings-table .circ-input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-color);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.circ-settings-table .circ-input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+}
+
+.circ-settings-table tr.total-row td {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
 .report-leader-mark {
   font-weight: normal;
   color: #000000;

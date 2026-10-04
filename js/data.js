@@ -59,6 +59,24 @@ function saveBlockConfig(config) {
   syncBanListFromBlocks();
 }
 
+// 班別回覧配布設定の取得（紙での回覧希望、通常時回覧板配布部数、全世帯回覧時配布部数）
+function getCirculationConfig() {
+  const raw = localStorage.getItem('community_roster_circulation_config');
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch (e) {
+    console.error('Failed to parse circulation config:', e);
+  }
+  return {};
+}
+
+// 班別回覧配布設定の保存
+function saveCirculationConfig(config) {
+  localStorage.setItem('community_roster_circulation_config', JSON.stringify(config || {}));
+}
+
 // 指定の班が属するブロック名を取得
 function getBanBlockName(ban, config = getBlockConfig()) {
   if (!ban) return '';

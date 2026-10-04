@@ -322,6 +322,13 @@ function fetchSettings(isInternal) {
       settings.passcode = val !== undefined ? String(val).trim() : '';
     } else if (key === 'adminPasscode') {
       settings.adminPasscode = val !== undefined ? String(val).trim() : '';
+    } else if (key === 'circulationConfig') {
+      try {
+        var parsedCirc = JSON.parse(val);
+        if (parsedCirc && typeof parsedCirc === 'object') {
+          settings.circulationConfig = parsedCirc;
+        }
+      } catch (e) {}
     }
   }
   return settings;
@@ -389,7 +396,8 @@ function saveSettings(newSettings) {
     { key: 'roles', val: filteredRoles ? JSON.stringify(filteredRoles) : null, desc: '役員のマスタ設定' },
     { key: 'communityName', val: newSettings.communityName ? String(newSettings.communityName).trim() : null, desc: '自治会・町内会名' },
     { key: 'passcode', val: newSettings.passcode !== undefined ? String(newSettings.passcode).trim() : null, desc: '役員用合言葉（閲覧・帳票印刷・集金用）' },
-    { key: 'adminPasscode', val: newSettings.adminPasscode !== undefined ? String(newSettings.adminPasscode).trim() : null, desc: '管理者用合言葉（名簿編集・設定用）' }
+    { key: 'adminPasscode', val: newSettings.adminPasscode !== undefined ? String(newSettings.adminPasscode).trim() : null, desc: '管理者用合言葉（名簿編集・設定用）' },
+    { key: 'circulationConfig', val: newSettings.circulationConfig ? JSON.stringify(newSettings.circulationConfig) : null, desc: '班別回覧配布設定（紙希望・通常部数・全世帯部数）' }
   ];
 
   items.forEach(function(item) {
@@ -424,7 +432,8 @@ function doGet(e) {
         settings: {
           communityName: s.communityName || '緑が丘自治会',
           blocks: s.blocks || DEFAULT_BLOCKS_GAS,
-          roles: s.roles || DEFAULT_ROLES_GAS
+          roles: s.roles || DEFAULT_ROLES_GAS,
+          circulationConfig: s.circulationConfig || {}
         }
       });
     }
