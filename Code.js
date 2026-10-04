@@ -397,7 +397,7 @@ function saveSettings(newSettings) {
     { key: 'communityName', val: newSettings.communityName ? String(newSettings.communityName).trim() : null, desc: '自治会・町内会名' },
     { key: 'passcode', val: newSettings.passcode !== undefined ? String(newSettings.passcode).trim() : null, desc: '役員用合言葉（閲覧・帳票印刷・集金用）' },
     { key: 'adminPasscode', val: newSettings.adminPasscode !== undefined ? String(newSettings.adminPasscode).trim() : null, desc: '管理者用合言葉（名簿編集・設定用）' },
-    { key: 'circulationConfig', val: newSettings.circulationConfig ? JSON.stringify(newSettings.circulationConfig) : null, desc: '班別回覧配布設定（紙希望・通常部数・全世帯部数）' }
+    { key: 'circulationConfig', val: newSettings.circulationConfig ? JSON.stringify(newSettings.circulationConfig) : null, desc: '班別回覧配布設定（通常部数・全世帯部数）' }
   ];
 
   items.forEach(function(item) {

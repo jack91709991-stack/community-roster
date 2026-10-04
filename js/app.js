@@ -1472,10 +1472,7 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       // 現役会員
       const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
       const activeCount = banActiveMembers.length;
-      const circCfg = (state.circulationConfig && state.circulationConfig[banName]) || null;
-      const paperCount = (circCfg && circCfg.paperCount !== undefined && circCfg.paperCount !== null && circCfg.paperCount !== '')
-        ? Number(circCfg.paperCount)
-        : banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
       const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
 
       blockActiveTotal += activeCount;
@@ -1658,10 +1655,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
       // 現役会員
       const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
       const activeCount = banActiveMembers.length;
-      const circCfg = (state.circulationConfig && state.circulationConfig[banName]) || null;
-      const paperCount = (circCfg && circCfg.paperCount !== undefined && circCfg.paperCount !== null && circCfg.paperCount !== '')
-        ? Number(circCfg.paperCount)
-        : banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
+      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
       const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
 
       blockActiveTotal += activeCount;
@@ -3047,7 +3041,6 @@ function renderCirculationSettings() {
   let tableRowsHtml = '';
   let totalBans = 0;
   let totalRosterMembers = 0;
-  let totalPaper = 0;
   let totalNormal = 0;
   let totalAll = 0;
 
@@ -3062,7 +3055,7 @@ function renderCirculationSettings() {
       tableRowsHtml += `
         <tr>
           <td class="cell-center" style="font-weight: 700; background: #fafafa;">${escapeHtml(block.name || `ブロック${blkIdx + 1}`)}</td>
-          <td class="cell-center" colspan="5" style="color: var(--text-light); font-size: 0.82rem;">班が登録されていません</td>
+          <td class="cell-center" colspan="4" style="color: var(--text-light); font-size: 0.82rem;">班が登録されていません</td>
         </tr>
       `;
       return;
@@ -3078,9 +3071,6 @@ function renderCirculationSettings() {
       totalRosterMembers += activeCount;
 
       const banCfg = circConfig[banName] || {};
-      const paperVal = (banCfg.paperCount !== undefined && banCfg.paperCount !== null)
-        ? banCfg.paperCount
-        : calcPaper;
       const normalVal = (banCfg.normalCount !== undefined && banCfg.normalCount !== null)
         ? banCfg.normalCount
         : (activeCount > 0 ? 1 : 0);
@@ -3088,7 +3078,6 @@ function renderCirculationSettings() {
         ? banCfg.allHouseholdCount
         : activeCount;
 
-      totalPaper += Number(paperVal) || 0;
       totalNormal += Number(normalVal) || 0;
       totalAll += Number(allVal) || 0;
 
@@ -3105,9 +3094,6 @@ function renderCirculationSettings() {
             <span style="color: var(--text-muted); font-size: 0.75rem;">(紙${calcPaper} / LINE${calcLine})</span>
           </td>
           <td class="cell-center">
-            <input type="number" min="0" class="circ-input" data-ban="${escapeHtml(banName)}" data-field="paperCount" value="${escapeHtml(String(paperVal))}">
-          </td>
-          <td class="cell-center">
             <input type="number" min="0" class="circ-input" data-ban="${escapeHtml(banName)}" data-field="normalCount" value="${escapeHtml(String(normalVal))}">
           </td>
           <td class="cell-center">
@@ -3122,12 +3108,11 @@ function renderCirculationSettings() {
     <table class="circ-settings-table">
       <thead>
         <tr>
-          <th style="width: 16%;">ブロック</th>
-          <th style="width: 14%;">班名</th>
-          <th style="width: 22%;">現役世帯数 (名簿参考)</th>
-          <th style="width: 16%;">① 紙での回覧希望<br><span style="font-size:0.75rem; font-weight:normal;">(部数/世帯)</span></th>
-          <th style="width: 16%;">② 通常時回覧板配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
-          <th style="width: 16%;">③ 全世帯回覧時配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
+          <th style="width: 18%;">ブロック</th>
+          <th style="width: 16%;">班名</th>
+          <th style="width: 26%;">現役世帯数 (名簿参考)</th>
+          <th style="width: 20%;">通常時回覧板配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
+          <th style="width: 20%;">全世帯回覧時配布<br><span style="font-size:0.75rem; font-weight:normal;">(部数)</span></th>
         </tr>
       </thead>
       <tbody>
@@ -3137,7 +3122,6 @@ function renderCirculationSettings() {
         <tr class="total-row">
           <td class="cell-center" colspan="2">合計 (${totalBans}班)</td>
           <td class="cell-center" style="font-size: 0.85rem;">${totalRosterMembers}世帯</td>
-          <td class="cell-center" id="circ-total-paper" style="color: var(--primary); font-weight: 700;">${totalPaper} 部</td>
           <td class="cell-center" id="circ-total-normal" style="color: var(--primary); font-weight: 700;">${totalNormal} 部</td>
           <td class="cell-center" id="circ-total-all" style="color: var(--primary); font-weight: 700;">${totalAll} 部</td>
         </tr>
@@ -3150,13 +3134,9 @@ function updateCirculationTotals() {
   const container = document.getElementById('circulation-settings-container');
   if (!container) return;
 
-  let totalPaper = 0;
   let totalNormal = 0;
   let totalAll = 0;
 
-  container.querySelectorAll('.circ-input[data-field="paperCount"]').forEach(inp => {
-    totalPaper += parseInt(inp.value, 10) || 0;
-  });
   container.querySelectorAll('.circ-input[data-field="normalCount"]').forEach(inp => {
     totalNormal += parseInt(inp.value, 10) || 0;
   });
@@ -3164,11 +3144,9 @@ function updateCirculationTotals() {
     totalAll += parseInt(inp.value, 10) || 0;
   });
 
-  const elPaper = document.getElementById('circ-total-paper');
   const elNormal = document.getElementById('circ-total-normal');
   const elAll = document.getElementById('circ-total-all');
 
-  if (elPaper) elPaper.textContent = `${totalPaper} 部`;
   if (elNormal) elNormal.textContent = `${totalNormal} 部`;
   if (elAll) elAll.textContent = `${totalAll} 部`;
 }
@@ -3184,15 +3162,12 @@ function handleAutofillCirculationConfig() {
     (block.bans || []).forEach(banName => {
       const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
       const activeCount = banActiveMembers.length;
-      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
       const normalCount = activeCount > 0 ? 1 : 0;
       const allHouseholdCount = activeCount;
 
-      const pInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="paperCount"]`);
       const nInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="normalCount"]`);
       const aInput = container.querySelector(`.circ-input[data-ban="${banName}"][data-field="allHouseholdCount"]`);
 
-      if (pInput) pInput.value = paperCount;
       if (nInput) nInput.value = normalCount;
       if (aInput) aInput.value = allHouseholdCount;
       count++;
