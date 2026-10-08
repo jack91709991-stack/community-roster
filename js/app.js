@@ -1415,6 +1415,7 @@ function generateBlockBanLeadersReportHtml(fiscalYear, dateStr) {
 function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
   const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
   const members = state.members || [];
+  const circConfig = state.circulationConfig || (typeof api !== 'undefined' && typeof api.getLocalCirculationConfig === 'function' ? api.getLocalCirculationConfig() : {}) || {};
 
   // ブロック設定を昇順ソート
   const sortedBlocks = [...blockConfig].sort((a, b) => {
@@ -1425,7 +1426,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
   let totalAllBansCount = 0;
   let grandTotalActiveMembers = 0;
   let grandTotalPaperMembers = 0;
-  let grandTotalLineMembers = 0;
+  let grandTotalNormalMembers = 0;
+  let grandTotalAllHouseholdMembers = 0;
 
   let tableRowsHtml = '';
 
@@ -1452,7 +1454,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
 
     let blockActiveTotal = 0;
     let blockPaperTotal = 0;
-    let blockLineTotal = 0;
+    let blockNormalTotal = 0;
+    let blockAllHouseholdTotal = 0;
 
     if (banCountInBlock === 0) {
       tableRowsHtml += `
@@ -1461,7 +1464,7 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
             ${escapeHtml(blockDisplayName)}<br>
             <span style="font-size: 0.85em; font-weight: normal;">（0班）</span>
           </td>
-          <td class="cell-center" colspan="6" style="color: #64748b;">所属する班が設定されていません</td>
+          <td class="cell-center" colspan="7" style="color: #64748b;">所属する班が設定されていません</td>
         </tr>
       `;
       return;
@@ -1475,15 +1478,27 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       const banActiveMembers = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m));
       const activeCount = banActiveMembers.length;
       const paperCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() !== 'LINE').length;
-      const lineCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() === 'LINE').length;
+
+      // 回覧配布設定（通常時・全世帯時）
+      const banCfg = circConfig[banName] || {};
+      const normalCount = (banCfg.normalCount !== undefined && banCfg.normalCount !== null)
+        ? Number(banCfg.normalCount)
+        : (activeCount > 0 ? 1 : 0);
+      const allHouseholdCount = (banCfg.allHouseholdCount !== undefined && banCfg.allHouseholdCount !== null)
+        ? Number(banCfg.allHouseholdCount)
+        : activeCount;
 
       blockActiveTotal += activeCount;
       blockPaperTotal += paperCount;
-      blockLineTotal += lineCount;
+      const normalCountNum = (activeCount === 0 && !banCfg.normalCount) ? 0 : (Number(normalCount) || 0);
+      const allHouseholdCountNum = (activeCount === 0 && !banCfg.allHouseholdCount) ? 0 : (Number(allHouseholdCount) || 0);
+      blockNormalTotal += normalCountNum;
+      blockAllHouseholdTotal += allHouseholdCountNum;
 
       grandTotalActiveMembers += activeCount;
       grandTotalPaperMembers += paperCount;
-      grandTotalLineMembers += lineCount;
+      grandTotalNormalMembers += normalCountNum;
+      grandTotalAllHouseholdMembers += allHouseholdCountNum;
 
       // 班長（現役優先）
       const banLeader = members.find(m => isBanMatching(m.ban, banName) && m.ban_leader === '班長' && isMemberActive(m))
@@ -1491,25 +1506,28 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       const leaderName = banLeader ? banLeader.name : '';
       const leaderPhone = banLeader ? (banLeader.phone || banLeader.phone2 || '') : '';
 
-      // 氏名・電話・会員数・紙回覧・LINE回覧の表示制御（会員数0の場合は「欠番」赤文字）
+      // 氏名・電話・数値列の表示制御（会員数0の場合は「欠番」赤文字、数値は空欄）
       let nameCellHtml = '';
       let phoneCellHtml = '';
       let activeCountDisplay = '';
       let paperCountDisplay = '';
-      let lineCountDisplay = '';
+      let normalCountDisplay = '';
+      let allHouseholdCountDisplay = '';
 
       if (activeCount === 0) {
         nameCellHtml = '<span class="report-vacant-note">欠番</span>';
         phoneCellHtml = '';
         activeCountDisplay = '';
         paperCountDisplay = '';
-        lineCountDisplay = '';
+        normalCountDisplay = '';
+        allHouseholdCountDisplay = '';
       } else {
         nameCellHtml = escapeHtml(leaderName);
         phoneCellHtml = escapeHtml(leaderPhone);
         activeCountDisplay = String(activeCount);
         paperCountDisplay = String(paperCount);
-        lineCountDisplay = String(lineCount);
+        normalCountDisplay = String(normalCount);
+        allHouseholdCountDisplay = String(allHouseholdCount);
       }
 
       // ブロック長判定（その班の現役会員で role === 'ブロック長' の人がいるか）
@@ -1535,7 +1553,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
           <td class="cell-left">${phoneCellHtml}</td>
           <td class="cell-right">${activeCountDisplay}</td>
           <td class="cell-right">${paperCountDisplay}</td>
-          <td class="cell-right">${lineCountDisplay}</td>
+          <td class="cell-right">${normalCountDisplay}</td>
+          <td class="cell-right">${allHouseholdCountDisplay}</td>
         </tr>
       `;
     });
@@ -1548,7 +1567,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
         <td></td>
         <td class="cell-right">${blockActiveTotal === 0 ? '' : blockActiveTotal}</td>
         <td class="cell-right">${blockPaperTotal === 0 ? '' : blockPaperTotal}</td>
-        <td class="cell-right">${blockLineTotal === 0 ? '' : blockLineTotal}</td>
+        <td class="cell-right">${blockNormalTotal === 0 ? '' : blockNormalTotal}</td>
+        <td class="cell-right">${blockAllHouseholdTotal === 0 ? '' : blockAllHouseholdTotal}</td>
       </tr>
     `;
   });
@@ -1561,7 +1581,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       <td></td>
       <td class="cell-right">${grandTotalActiveMembers}</td>
       <td class="cell-right">${grandTotalPaperMembers}</td>
-      <td class="cell-right">${grandTotalLineMembers}</td>
+      <td class="cell-right">${grandTotalNormalMembers}</td>
+      <td class="cell-right">${grandTotalAllHouseholdMembers}</td>
     </tr>
   `;
 
@@ -1571,16 +1592,17 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       <div class="report-date">${escapeHtml(dateStr)}時点</div>
     </div>
     <div class="report-title-main">${escapeHtml(fiscalYear)}　ブロック、班別集計表（回覧確認用）</div>
-    <table class="report-table">
+    <table class="report-table report-table-circulation">
       <thead>
         <tr>
-          <th style="width: 14%;">ブロック名</th>
-          <th style="width: 8%;">班名</th>
-          <th style="width: 22%;">氏名</th>
-          <th style="width: 20%;">電話</th>
-          <th style="width: 12%;">会員数</th>
-          <th style="width: 12%;">紙回覧</th>
-          <th style="width: 12%;">LINE回覧</th>
+          <th style="width: 13%;">ブロック名</th>
+          <th style="width: 7%;">班名</th>
+          <th style="width: 20%;">氏名</th>
+          <th style="width: 16%;">電話</th>
+          <th style="width: 11%;">会員世帯数</th>
+          <th style="width: 11%;">紙での回覧希望<br>（世帯数）</th>
+          <th style="width: 11%;">通常時回覧版配布<br>（部数）</th>
+          <th style="width: 11%;">全世帯回覧時配布<br>（部数）</th>
         </tr>
       </thead>
       <tbody>

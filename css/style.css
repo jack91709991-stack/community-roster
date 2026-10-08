@@ -2033,6 +2033,18 @@ body {
   font-size: 10.5pt;
 }
 
+.report-table.report-table-circulation th {
+  padding: 4px 3px;
+  font-size: 8.5pt;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+
+.report-table.report-table-circulation td {
+  padding: 3.5px 4px;
+  font-size: 9pt;
+}
+
 .report-table.report-table-compact {
   max-width: 580px;
   margin-left: auto;
@@ -2247,6 +2259,17 @@ body {
     background: #f8fafc !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  .report-table.report-table-circulation th {
+    padding: 3px 2px !important;
+    font-size: 8.2pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .report-table.report-table-circulation td {
+    padding: 3px 3px !important;
+    font-size: 9pt !important;
   }
 
   .report-caution,
