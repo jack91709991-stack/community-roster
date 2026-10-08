@@ -192,6 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } else {
     // GAS URL未設定の場合: ローカルモード（未認証ボタンは非表示）
+    await loadData();
     updateSyncStatus('local', 'ローカルモード（GAS未設定）');
     updateAuthUI();
   }
@@ -441,6 +442,7 @@ function renderAllViews() {
   renderDashboard();
   renderReportsTab();
   updatePendingBadges();
+  renderCirculationSettings();
 }
 
 // 申請未処理バッジの更新
@@ -1268,7 +1270,7 @@ function generateBlockBanLeadersReportHtml(fiscalYear, dateStr) {
 
     // 会員数（現役）が1名以上の班の数をカウント（0の班は除外）
     const activeBansCountInBlock = sortedBans.filter(bName => {
-      return members.some(m => m.ban === bName && m.status === '現役');
+      return members.some(m => isBanMatching(m.ban, bName) && isMemberActive(m));
     }).length;
     totalAllBansCount += activeBansCountInBlock;
 
@@ -1298,16 +1300,16 @@ function generateBlockBanLeadersReportHtml(fiscalYear, dateStr) {
       const banDisplayName = (banName || '').replace(/班$/, '').trim();
 
       // 現役会員数
-      const activeCount = members.filter(m => m.ban === banName && m.status === '現役').length;
+      const activeCount = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m)).length;
       blockActiveTotal += activeCount;
       grandTotalActiveMembers += activeCount;
 
       // 休会会員数
-      const suspendedCount = members.filter(m => m.ban === banName && m.status === '休会').length;
+      const suspendedCount = members.filter(m => isBanMatching(m.ban, banName) && String(m.status || '').trim() === '休会').length;
 
       // 班長（役職・係ではなく班長項目で判定、現役優先）
-      const banLeader = members.find(m => m.ban === banName && m.ban_leader === '班長' && m.status === '現役')
-        || members.find(m => m.ban === banName && m.ban_leader === '班長');
+      const banLeader = members.find(m => isBanMatching(m.ban, banName) && m.ban_leader === '班長' && isMemberActive(m))
+        || members.find(m => isBanMatching(m.ban, banName) && m.ban_leader === '班長');
       const leaderName = banLeader ? banLeader.name : '';
       const leaderPhone = banLeader ? (banLeader.phone || banLeader.phone2 || '') : '';
 
@@ -1327,7 +1329,7 @@ function generateBlockBanLeadersReportHtml(fiscalYear, dateStr) {
       }
 
       // ブロック長判定（その班の現役会員で role === 'ブロック長' の人がいるか）
-      const hasBlockLeader = members.some(m => m.ban === banName && m.role === 'ブロック長' && m.status !== '転出退会');
+      const hasBlockLeader = members.some(m => isBanMatching(m.ban, banName) && m.role === 'ブロック長' && String(m.status || '').trim() !== '転出退会');
       const banLabel = hasBlockLeader
         ? `◎${escapeHtml(banDisplayName)}`
         : escapeHtml(banDisplayName);
@@ -1438,7 +1440,7 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
 
     // 会員数（現役）が1名以上の班の数をカウント（0の班は除外）
     const activeBansCountInBlock = sortedBans.filter(bName => {
-      return members.some(m => m.ban === bName && m.status === '現役');
+      return members.some(m => isBanMatching(m.ban, bName) && isMemberActive(m));
     }).length;
     totalAllBansCount += activeBansCountInBlock;
 
@@ -1470,10 +1472,10 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       const banDisplayName = (banName || '').replace(/班$/, '').trim();
 
       // 現役会員
-      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const banActiveMembers = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m));
       const activeCount = banActiveMembers.length;
-      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
-      const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
+      const paperCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() !== 'LINE').length;
+      const lineCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() === 'LINE').length;
 
       blockActiveTotal += activeCount;
       blockPaperTotal += paperCount;
@@ -1484,8 +1486,8 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       grandTotalLineMembers += lineCount;
 
       // 班長（現役優先）
-      const banLeader = members.find(m => m.ban === banName && m.ban_leader === '班長' && m.status === '現役')
-        || members.find(m => m.ban === banName && m.ban_leader === '班長');
+      const banLeader = members.find(m => isBanMatching(m.ban, banName) && m.ban_leader === '班長' && isMemberActive(m))
+        || members.find(m => isBanMatching(m.ban, banName) && m.ban_leader === '班長');
       const leaderName = banLeader ? banLeader.name : '';
       const leaderPhone = banLeader ? (banLeader.phone || banLeader.phone2 || '') : '';
 
@@ -1511,7 +1513,7 @@ function generateBlockBanCirculationReportHtml(fiscalYear, dateStr) {
       }
 
       // ブロック長判定（その班の現役会員で role === 'ブロック長' の人がいるか）
-      const hasBlockLeader = members.some(m => m.ban === banName && m.role === 'ブロック長' && m.status !== '転出退会');
+      const hasBlockLeader = members.some(m => isBanMatching(m.ban, banName) && m.role === 'ブロック長' && String(m.status || '').trim() !== '転出退会');
       const banLabel = hasBlockLeader
         ? `◎${escapeHtml(banDisplayName)}`
         : escapeHtml(banDisplayName);
@@ -1621,7 +1623,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
 
     // 会員数（現役）が1名以上の班の数をカウント（0の班は除外）
     const activeBansCountInBlock = sortedBans.filter(bName => {
-      return members.some(m => m.ban === bName && m.status === '現役');
+      return members.some(m => isBanMatching(m.ban, bName) && isMemberActive(m));
     }).length;
     totalAllBansCount += activeBansCountInBlock;
 
@@ -1653,10 +1655,10 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
       const banDisplayName = (banName || '').replace(/班$/, '').trim();
 
       // 現役会員
-      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const banActiveMembers = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m));
       const activeCount = banActiveMembers.length;
-      const paperCount = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
-      const lineCount = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
+      const paperCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() !== 'LINE').length;
+      const lineCount = banActiveMembers.filter(m => String(m.circulation || '紙').trim() === 'LINE').length;
 
       blockActiveTotal += activeCount;
       blockPaperTotal += paperCount;
@@ -1682,7 +1684,7 @@ function generateBlockBanCirculationCompactReportHtml(fiscalYear, dateStr) {
       }
 
       // ブロック長判定（その班の現役会員で role === 'ブロック長' の人がいるか）
-      const hasBlockLeader = members.some(m => m.ban === banName && m.role === 'ブロック長' && m.status !== '転出退会');
+      const hasBlockLeader = members.some(m => isBanMatching(m.ban, banName) && m.role === 'ブロック長' && String(m.status || '').trim() !== '転出退会');
       const banLabel = hasBlockLeader
         ? `◎${escapeHtml(banDisplayName)}`
         : escapeHtml(banDisplayName);
@@ -3021,8 +3023,21 @@ function renderCirculationSettings() {
   if (!container) return;
 
   const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
-  const members = state.members || [];
-  const circConfig = state.circulationConfig || (typeof api.getLocalCirculationConfig === 'function' ? api.getLocalCirculationConfig() : {}) || {};
+
+  // 名簿データ: state.members またはローカルストレージのキャッシュから取得
+  let members = state.members;
+  if (!Array.isArray(members) || members.length === 0) {
+    if (typeof api !== 'undefined' && typeof api.getLocalMembers === 'function') {
+      members = api.getLocalMembers() || [];
+      if (members.length > 0 && (!state.members || state.members.length === 0)) {
+        state.members = members;
+      }
+    } else {
+      members = [];
+    }
+  }
+
+  const circConfig = state.circulationConfig || (typeof api !== 'undefined' && typeof api.getLocalCirculationConfig === 'function' ? api.getLocalCirculationConfig() : {}) || {};
 
   // ブロック設定を昇順ソート
   const sortedBlocks = [...blockConfig].sort((a, b) => {
@@ -3063,10 +3078,17 @@ function renderCirculationSettings() {
 
     sortedBans.forEach((banName, bIdx) => {
       totalBans++;
-      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      // 名簿一覧に登録されている会員情報を班ごとに集計（表記揺れ・現役判定対応）
+      const banActiveMembers = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m));
       const activeCount = banActiveMembers.length;
-      const calcPaper = banActiveMembers.filter(m => (m.circulation || '紙') !== 'LINE').length;
-      const calcLine = banActiveMembers.filter(m => (m.circulation || '紙') === 'LINE').length;
+      const calcPaper = banActiveMembers.filter(m => {
+        const c = String(m.circulation || '紙').trim();
+        return c !== 'LINE';
+      }).length;
+      const calcLine = banActiveMembers.filter(m => {
+        const c = String(m.circulation || '紙').trim();
+        return c === 'LINE';
+      }).length;
 
       totalRosterMembers += activeCount;
 
@@ -3089,8 +3111,8 @@ function renderCirculationSettings() {
         <tr data-ban="${escapeHtml(banName)}">
           ${blockTd}
           <td class="cell-center" style="font-weight: 600;">${escapeHtml(banName)}</td>
-          <td class="cell-center" style="font-size: 0.82rem; color: var(--text-color);">
-            <strong>${activeCount}</strong>世帯
+          <td class="cell-center" style="font-size: 0.85rem; color: var(--text-color);">
+            <strong style="font-size: 0.95rem; color: var(--primary);">${activeCount}</strong>世帯
             <span style="color: var(--text-muted); font-size: 0.75rem;">(紙${calcPaper} / LINE${calcLine})</span>
           </td>
           <td class="cell-center">
@@ -3121,7 +3143,7 @@ function renderCirculationSettings() {
       <tfoot>
         <tr class="total-row">
           <td class="cell-center" colspan="2">合計 (${totalBans}班)</td>
-          <td class="cell-center" style="font-size: 0.85rem;">${totalRosterMembers}世帯</td>
+          <td class="cell-center" style="font-size: 0.88rem; font-weight: 700; color: var(--primary);">${totalRosterMembers}世帯</td>
           <td class="cell-center" id="circ-total-normal" style="color: var(--primary); font-weight: 700;">${totalNormal} 部</td>
           <td class="cell-center" id="circ-total-all" style="color: var(--primary); font-weight: 700;">${totalAll} 部</td>
         </tr>
@@ -3153,14 +3175,21 @@ function updateCirculationTotals() {
 
 function handleAutofillCirculationConfig() {
   const blockConfig = typeof getBlockConfig === 'function' ? getBlockConfig() : [];
-  const members = state.members || [];
+  let members = state.members;
+  if (!Array.isArray(members) || members.length === 0) {
+    if (typeof api !== 'undefined' && typeof api.getLocalMembers === 'function') {
+      members = api.getLocalMembers() || [];
+    } else {
+      members = [];
+    }
+  }
   const container = document.getElementById('circulation-settings-container');
   if (!container) return;
 
   let count = 0;
   blockConfig.forEach(block => {
     (block.bans || []).forEach(banName => {
-      const banActiveMembers = members.filter(m => m.ban === banName && m.status === '現役');
+      const banActiveMembers = members.filter(m => isBanMatching(m.ban, banName) && isMemberActive(m));
       const activeCount = banActiveMembers.length;
       const normalCount = activeCount > 0 ? 1 : 0;
       const allHouseholdCount = activeCount;

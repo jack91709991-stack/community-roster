@@ -608,3 +608,38 @@ function getNextMemberId(members) {
   const nextNum = maxNum + 1;
   return `MB-${String(nextNum).padStart(4, '0')}`;
 }
+
+// 班の一致判定（「1班」と「1」、「第1班」、全角半角などの表記揺れを柔軟に照合）
+function isBanMatching(mBan, targetBan) {
+  if (!mBan || !targetBan) return false;
+  const b1 = String(mBan).trim();
+  const b2 = String(targetBan).trim();
+  if (b1 === b2) return true;
+
+  const h1 = toHalfWidth(b1);
+  const h2 = toHalfWidth(b2);
+  if (h1 === h2) return true;
+
+  // 「班」や「第」を取り除いて比較 (例: "1" と "1班"、"第1班" と "1班")
+  const norm1 = h1.replace(/^第/, '').replace(/班$/, '').trim();
+  const norm2 = h2.replace(/^第/, '').replace(/班$/, '').trim();
+  if (norm1 === norm2) return true;
+
+  // "1ブロック1班" などのブロック付与表記に対応
+  if (h1.endsWith(h2) || h2.endsWith(h1)) return true;
+
+  return false;
+}
+
+// 会員が現役（または名簿登録中の有効世帯）か判定
+function isMemberActive(m) {
+  if (!m) return false;
+  const status = String(m.status || '').trim();
+  // 「転出退会」「退会」「休会」でなければ現役会員として集計
+  // （ステータス未設定、空文字、「現役」、「在籍」などはすべて現役としてカウント）
+  if (status === '転出退会' || status === '退会' || status === '休会') {
+    return false;
+  }
+  return true;
+}
+

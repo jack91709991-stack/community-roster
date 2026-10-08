@@ -574,15 +574,23 @@ function fetchMembers() {
     if (!id) continue;
 
     function getVal(key, def) {
-      if (hMap[key] !== undefined && row[hMap[key]] !== undefined) {
-        return row[hMap[key]];
+      if (hMap[key] !== undefined && row[hMap[key]] !== undefined && row[hMap[key]] !== null) {
+        var v = row[hMap[key]];
+        if (typeof v === 'string' && v.trim() === '') {
+          return def;
+        }
+        return v;
       }
       return def;
     }
 
     function getDispVal(key, def) {
-      if (hMap[key] !== undefined && dispRow[hMap[key]] !== undefined) {
-        return dispRow[hMap[key]];
+      if (hMap[key] !== undefined && dispRow[hMap[key]] !== undefined && dispRow[hMap[key]] !== null) {
+        var v = dispRow[hMap[key]];
+        if (typeof v === 'string' && v.trim() === '') {
+          return def;
+        }
+        return v;
       }
       return def;
     }
@@ -606,9 +614,15 @@ function fetchMembers() {
     var rawPhone = getDispVal("電話番号", '') || getVal("電話番号", '');
     var rawPhone2 = getDispVal("電話番号2", '') || getVal("電話番号2", '');
 
+    var rawStatus = String(getVal("会員状態", '') || getVal("状態", '') || getVal("ステータス", '')).trim();
+    if (!rawStatus) rawStatus = '現役';
+
+    var rawCirc = String(getVal("回覧方法", '') || getVal("回覧", '')).trim();
+    if (!rawCirc) rawCirc = '紙';
+
     members.push({
       id: id,
-      ban: String(getVal("班", '')),
+      ban: String(getVal("班", '')).trim(),
       name: String(getVal("氏名", '')),
       kana: String(getVal("フリガナ", '')),
       phone: formatPhone(rawPhone),
@@ -620,10 +634,10 @@ function fetchMembers() {
       role: finalOfficer,
       ban_leader: finalBanLeader,
       fee_status: String(getVal("会費状況", '未納')),
-      circulation: String(getVal("回覧方法", '紙')),
+      circulation: rawCirc,
       support_needed: String(getVal("要支援・見守り", 'なし')),
       join_date: formatDateOnly(getVal("加入日", '')),
-      status: String(getVal("会員状態", '現役')),
+      status: rawStatus,
       notes: String(getVal("備考", '')),
       updated_at: formatDateValue(getVal("更新日時", ''))
     });

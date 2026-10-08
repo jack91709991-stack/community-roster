@@ -164,9 +164,13 @@ const api = {
       // マイグレーション: circulation（回覧方法）、phone2、join_date、ban_leader
       let updated = false;
       list.forEach(m => {
-        if (!m.circulation) {
+        if (!m.circulation || String(m.circulation).trim() === '') {
           const initMatch = INITIAL_MEMBERS.find(init => init.id === m.id);
           m.circulation = (initMatch && initMatch.circulation) ? initMatch.circulation : '紙';
+          updated = true;
+        }
+        if (!m.status || String(m.status).trim() === '') {
+          m.status = '現役';
           updated = true;
         }
         if (m.phone) {
@@ -306,6 +310,12 @@ const api = {
             m.phone = formatPhoneNumber(m.phone);
             m.phone2 = formatPhoneNumber(m.phone2);
             m.ban_leader = m.ban_leader === '班長' ? '班長' : 'なし';
+            if (!m.status || String(m.status).trim() === '') {
+              m.status = '現役';
+            }
+            if (!m.circulation || String(m.circulation).trim() === '') {
+              m.circulation = '紙';
+            }
           });
           this.setLocalMembers(data.members);
         }
