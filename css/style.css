@@ -2046,14 +2046,21 @@ body {
 }
 
 .report-table.report-table-compact {
-  max-width: 580px;
+  max-width: 620px;
   margin-left: auto;
   margin-right: auto;
 }
 
-.report-table.report-table-compact th,
+.report-table.report-table-compact th {
+  padding: 4px 2px;
+  font-size: 8.5pt;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+
 .report-table.report-table-compact td {
-  padding: 5px 6px;
+  padding: 3.5px 4px;
+  font-size: 9pt;
 }
 
 /* 班別 回覧配布設定テーブル */
@@ -2261,13 +2268,15 @@ body {
     print-color-adjust: exact;
   }
 
-  .report-table.report-table-circulation th {
+  .report-table.report-table-circulation th,
+  .report-table.report-table-compact th {
     padding: 3px 2px !important;
     font-size: 8.2pt !important;
     line-height: 1.2 !important;
   }
 
-  .report-table.report-table-circulation td {
+  .report-table.report-table-circulation td,
+  .report-table.report-table-compact td {
     padding: 3px 3px !important;
     font-size: 9pt !important;
   }
