@@ -2611,17 +2611,58 @@ function initEventListeners() {
     }, 300);
   });
 
+  // 帳票印刷タブ: 1ページ自動収束（オートスケーリング）
+  function fitReportToSinglePage() {
+    const container = document.getElementById('report-paper-container');
+    if (!container) return;
+    container.style.zoom = '';
+    // A4縦の安全な最大高さ（マージン考慮、約1010px）
+    const maxAllowedHeight = 1010;
+    const currentHeight = container.scrollHeight;
+    if (currentHeight > maxAllowedHeight) {
+      const scale = Math.floor((maxAllowedHeight / currentHeight) * 100) / 100;
+      if (scale < 1 && scale >= 0.5) {
+        container.style.zoom = scale;
+      }
+    }
+  }
+
+  function resetReportFit() {
+    const container = document.getElementById('report-paper-container');
+    if (container) {
+      container.style.zoom = '';
+    }
+  }
+
   // 帳票印刷タブ: 印刷ボタン（A4縦帳票）
   const btnPrintActiveReport = document.getElementById('btn-print-active-report');
   if (btnPrintActiveReport) {
     btnPrintActiveReport.addEventListener('click', () => {
       document.body.classList.add('printing-report');
-      window.print();
+      fitReportToSinglePage();
       setTimeout(() => {
-        document.body.classList.remove('printing-report');
-      }, 500);
+        window.print();
+        setTimeout(() => {
+          resetReportFit();
+          document.body.classList.remove('printing-report');
+        }, 500);
+      }, 50);
     });
   }
+
+  // ブラウザ標準のショートカット（Ctrl+P）でも自動フィット連動
+  window.addEventListener('beforeprint', () => {
+    const activeTab = document.querySelector('.tab-content.active');
+    if (activeTab && activeTab.id === 'tab-reports') {
+      document.body.classList.add('printing-report');
+      fitReportToSinglePage();
+    }
+  });
+
+  window.addEventListener('afterprint', () => {
+    resetReportFit();
+    document.body.classList.remove('printing-report');
+  });
 
   // 帳票印刷タブ: パラメータ変更・帳票切り替え
   ['report-select-type', 'report-param-year', 'report-param-date'].forEach(id => {
